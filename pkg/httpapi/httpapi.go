@@ -1,0 +1,142 @@
+package httapi
+
+import (
+	"github.com/go-playground/validator/v10"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+)
+
+type (
+	// App is the application entrypoint.
+	App struct {
+		e         *echo.Echo
+		validator *StructValidator // 验证器
+	}
+
+	// Router 路由
+	Router struct {
+		Method      string           // 方法
+		Path        string           // 路径
+		Name        string           // 名称
+		Handle      echo.HandlerFunc // 处理函数
+		Middlewares []Middleware     // 中间件函数
+	}
+
+	// Group 路由的分组
+	Group struct {
+		Path        string       // 路径
+		Middlewares []Middleware // 中间件函数
+		Routers     []Router     // 路由
+	}
+
+	// Middleware 中间件抽象
+	Middleware interface {
+		MiddlewareFunc() echo.MiddlewareFunc
+	}
+
+	// StructValidator 结构体验证器
+	StructValidator struct {
+		validator *validator.Validate
+	}
+
+	// Module 按模块组合
+	Module interface {
+		// 初始化模块
+		Init()
+		// 模块的分组路由
+		Group() Group
+
+		// 设置app的映射
+		SetApp(app *App)
+	}
+)
+
+// New creates a new application.
+func New() *App {
+	return &App{
+		e:         echo.New(),
+		validator: NewStructValidator(),
+	}
+}
+
+// Validate 实现echo.Validator
+func (s *StructValidator) Validate(i interface{}) error {
+	return s.validator.Struct(i)
+}
+
+// AddValidator 增加自定义验证器
+func (s *StructValidator) AddValidator(tag string, v validator.Func) error {
+	return s.validator.RegisterValidation(tag, v)
+}
+
+// transEchoValidator 转换为echo接口
+func (s *StructValidator) transEchoValidator() echo.Validator {
+	return s
+}
+
+// NewStructValidator 构建新结构体
+func NewStructValidator() *StructValidator {
+	return &StructValidator{validator: validator.New()}
+}
+
+// AddRouter adds a router to the application.
+func (a *App) AddRouter(r Router) {
+	a.e.Add(r.Method, r.Path, r.Handle, r.GetMiddlewares()...)
+}
+
+// AddGroup adds a group to the application.
+func (a *App) AddGroup(g Group) {
+	_g := a.e.Group(g.Path, g.GetMiddlewares()...)
+	for _, r := range g.Routers {
+		_g.Add(r.Method, r.Path, r.Handle, r.GetMiddlewares()...)
+	}
+}
+
+// AddModule adds a module to the application.
+func (a *App) AddModule(m Module) {
+	m.SetApp(a)
+	m.Init() // 先执行初始化
+	a.AddGroup(m.Group())
+}
+
+// Use adds a middleware to the application.
+func (a *App) Use(m ...echo.MiddlewareFunc) {
+	a.e.Use(m...)
+}
+
+// AddValidator 增加自定义验证器
+func (a *App) AddValidator(key string, v validator.Func) {
+	a.validator.AddValidator(key, v)
+}
+
+// start starts the application.
+func (a *App) Start(listenAddr string) {
+	// 增加验证器
+	a.e.Validator = a.validator.transEchoValidator()
+
+	// 全局中间件
+	a.e.Use(middleware.Logger())
+	a.e.Use(middleware.Recover())
+	a.e.Use(middleware.CORS())
+	a.e.Use(middleware.Gzip())
+
+	a.e.Logger.Fatal(a.e.Start(listenAddr))
+}
+
+// GetMiddlewares 获取所有注册中间件
+func (r *Router) GetMiddlewares() []echo.MiddlewareFunc {
+	var middlewares []echo.MiddlewareFunc
+	for _, m := range r.Middlewares {
+		middlewares = append(middlewares, m.MiddlewareFunc())
+	}
+	return middlewares
+}
+
+// GetMiddlewares 获取所有注册中间件
+func (g *Group) GetMiddlewares() []echo.MiddlewareFunc {
+	var middlewares []echo.MiddlewareFunc
+	for _, m := range g.Middlewares {
+		middlewares = append(middlewares, m.MiddlewareFunc())
+	}
+	return middlewares
+}
