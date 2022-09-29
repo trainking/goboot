@@ -3,6 +3,7 @@ package etcdx
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"go.etcd.io/etcd/api/v3/mvccpb"
@@ -98,5 +99,19 @@ func (c *ClientX) WatchWithPrefix(ctx context.Context, key string, putHandler Ch
 				putHandler(string(e.Kv.Key), e.Kv.Value)
 			}
 		}
+	}
+}
+
+// NewLease 创建一个租约
+func (c *ClientX) NewLease(target string, value string, leaseTTL int64, heartT int) *LeaseX {
+	target = strings.TrimRight(target, "/") + "/"
+
+	return &LeaseX{
+		target:   target,
+		value:    value,
+		leaseTTL: leaseTTL,
+		heartT:   heartT,
+		closeCh:  make(chan struct{}),
+		xClient:  c,
 	}
 }
