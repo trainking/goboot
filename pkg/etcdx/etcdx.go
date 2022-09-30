@@ -3,11 +3,12 @@ package etcdx
 import (
 	"context"
 	"errors"
-	"strings"
 	"time"
 
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/client/v3/naming/resolver"
+	"google.golang.org/grpc"
 )
 
 // ErrorNotFound 表示该key找不多对应的值，即不存在
@@ -102,16 +103,12 @@ func (c *ClientX) WatchWithPrefix(ctx context.Context, key string, putHandler Ch
 	}
 }
 
-// NewLease 创建一个租约
-func (c *ClientX) NewLease(target string, value string, leaseTTL int64, heartT int) *LeaseX {
-	target = strings.TrimRight(target, "/") + "/"
-
-	return &LeaseX{
-		target:   target,
-		value:    value,
-		leaseTTL: leaseTTL,
-		heartT:   heartT,
-		closeCh:  make(chan struct{}),
-		xClient:  c,
+// DialGrpc 使用gRpc的负载均很获取grpc连接
+func (c *ClientX) DialGrpc(service string) (*grpc.ClientConn, error) {
+	etcdResolver, err := resolver.NewBuilder(c.client)
+	if err != nil {
+		return nil, err
 	}
+
+	return grpc.Dial("etcd:///"+service, grpc.WithResolvers(etcdResolver))
 }
