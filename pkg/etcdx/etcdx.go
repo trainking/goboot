@@ -104,11 +104,13 @@ func (c *ClientX) WatchWithPrefix(ctx context.Context, key string, putHandler Ch
 }
 
 // DialGrpc 使用gRpc的负载均很获取grpc连接
-func (c *ClientX) DialGrpc(service string) (*grpc.ClientConn, error) {
+func (c *ClientX) DialGrpc(service string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	etcdResolver, err := resolver.NewBuilder(c.client)
 	if err != nil {
 		return nil, err
 	}
 
-	return grpc.Dial("etcd:///"+service, grpc.WithResolvers(etcdResolver))
+	opts = append(opts, grpc.WithResolvers(etcdResolver))
+
+	return grpc.Dial("etcd:///"+service, opts...)
 }
