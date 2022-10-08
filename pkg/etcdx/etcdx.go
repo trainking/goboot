@@ -111,6 +111,5 @@ func (c *ClientX) DialGrpc(service string, opts ...grpc.DialOption) (*grpc.Clien
 	}
 
 	opts = append(opts, grpc.WithResolvers(etcdResolver))
-
 	return grpc.Dial("etcd:///"+service, opts...)
 }
