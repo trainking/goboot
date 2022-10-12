@@ -2,18 +2,24 @@ package rabbitmqx
 
 import (
 	"fmt"
-	"github.com/wagslane/go-rabbitmq"
 	"testing"
 	"time"
+
+	"github.com/wagslane/go-rabbitmq"
 )
 
 func TestNewDelayedQueue(t *testing.T) {
-	d, err := NewDelayedQueueConsumer("amqp://admin:123456@192.168.33.10:5672/app", "test.deleayed.ex", "test.deleayed.rk", "test.deleayed.queue")
+	config := NewDeleayedQueueConfigByMap(map[string]interface{}{
+		"mqurl":      "amqp://admin:123456@192.168.33.10:5672/app",
+		"exchange":   "test.deleayed.ex",
+		"routingkey": "test.deleayed.rk",
+		"queue":      "test.deleayed.queue",
+	})
+	d, err := NewDelayedQueueConsumer(config)
 	if err != nil {
 		t.Error(err)
 	}
 
-	fmt.Println(1111)
 	d.Consume(func(d rabbitmq.Delivery) (action rabbitmq.Action) {
 		fmt.Println(d.Body)
 		return rabbitmq.Ack

@@ -13,7 +13,7 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-// RandStringHex Generate a random string for hexadecimal. Docker Id use this.
+// Generate a random string for hexadecimal. Docker Id use this.
 func RandStringHex(n int) (string, error) {
 	readByes := make([]byte, n/2)
 	if _, err := rand.Read(readByes); err != nil {

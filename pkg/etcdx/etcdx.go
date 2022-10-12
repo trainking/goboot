@@ -88,9 +88,14 @@ func (c *ClientX) GetWithPrefix(ctx context.Context, key string) ([][]byte, erro
 	return rList, nil
 }
 
-// WatchWithPrefix 监听某一组简直对的变化
-func (c *ClientX) WatchWithPrefix(ctx context.Context, key string, putHandler ChangeHandler, delHandler ChangeHandler) {
-	wc := c.client.Watch(ctx, key, clientv3.WithPrefix())
+// Watch 监听指定键的变化
+func (c *ClientX) Watch(ctx context.Context, key string, putHandler ChangeHandler, delHandler ChangeHandler) {
+	wc := c.client.Watch(ctx, key)
+	c.watch(wc, putHandler, delHandler)
+}
+
+// watch 产生变化处理
+func (c *ClientX) watch(wc clientv3.WatchChan, putHandler ChangeHandler, delHandler ChangeHandler) {
 	for v := range wc {
 		for _, e := range v.Events {
 			switch e.Type {
@@ -101,6 +106,12 @@ func (c *ClientX) WatchWithPrefix(ctx context.Context, key string, putHandler Ch
 			}
 		}
 	}
+}
+
+// WatchWithPrefix 监听某一组简直对的变化
+func (c *ClientX) WatchWithPrefix(ctx context.Context, key string, putHandler ChangeHandler, delHandler ChangeHandler) {
+	wc := c.client.Watch(ctx, key, clientv3.WithPrefix())
+	c.watch(wc, putHandler, delHandler)
 }
 
 // DialGrpc 使用gRpc的负载均很获取grpc连接

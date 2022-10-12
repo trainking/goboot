@@ -1,6 +1,9 @@
-package httapi
+package httpapi
 
 import (
+	"skyland-dev-peripheral/pkg/boot"
+	"skyland-dev-peripheral/pkg/utils"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -9,8 +12,11 @@ import (
 type (
 	// App is the application entrypoint.
 	App struct {
+		boot.BaseInstance
+
 		e         *echo.Echo
 		validator *StructValidator // 验证器
+		modules   []Module         // 加入的模块
 	}
 
 	// Router 路由
@@ -42,21 +48,28 @@ type (
 	// Module 按模块组合
 	Module interface {
 		// 初始化模块
-		Init()
+		Init(app *App)
 		// 模块的分组路由
 		Group() Group
-
-		// 设置app的映射
-		SetApp(app *App)
 	}
 )
 
 // New creates a new application.
-func New() *App {
-	return &App{
-		e:         echo.New(),
-		validator: NewStructValidator(),
+func New(configPath string, addr string, instancdID int64, modules []Module) boot.Instance {
+	// 加载配置
+	v, err := utils.LoadConfigFileViper(configPath)
+	if err != nil {
+		panic(err)
 	}
+
+	app := new(App)
+	app.e = echo.New()
+	app.validator = NewStructValidator()
+	app.Config = v
+	app.Addr = addr
+	app.IntanceID = instancdID
+	app.modules = modules
+	return app
 }
 
 // Validate 实现echo.Validator
@@ -94,8 +107,7 @@ func (a *App) AddGroup(g Group) {
 
 // AddModule adds a module to the application.
 func (a *App) AddModule(m Module) {
-	m.SetApp(a)
-	m.Init() // 先执行初始化
+	m.Init(a) // 先执行初始化
 	a.AddGroup(m.Group())
 }
 
@@ -110,7 +122,7 @@ func (a *App) AddValidator(key string, v validator.Func) {
 }
 
 // start starts the application.
-func (a *App) Start(listenAddr string) {
+func (a *App) Start() error {
 	// 增加验证器
 	a.e.Validator = a.validator.transEchoValidator()
 
@@ -120,7 +132,22 @@ func (a *App) Start(listenAddr string) {
 	a.e.Use(middleware.CORS())
 	a.e.Use(middleware.Gzip())
 
-	a.e.Logger.Fatal(a.e.Start(listenAddr))
+	return a.e.Start(a.Addr)
+}
+
+// Init 初始化阶段
+func (a *App) Init() error {
+	a.BaseInstance.Init()
+
+	for _, m := range a.modules {
+		a.AddModule(m)
+	}
+	return nil
+}
+
+// Stop 停止服务
+func (a *App) Stop() {
+	a.e.Close()
 }
 
 // GetMiddlewares 获取所有注册中间件

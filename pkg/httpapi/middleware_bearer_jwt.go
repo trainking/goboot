@@ -1,4 +1,4 @@
-package httapi
+package httpapi
 
 import (
 	"time"

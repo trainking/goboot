@@ -8,9 +8,16 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
+// DefaultSpinMutexConfig 默认一份自旋锁配置
+var DefaultSpinMutexConfig = SpinMutexConfig{
+	Retry:   3,
+	Sleep:   1 * time.Second,
+	Timeout: 5 * time.Second,
+}
+
 // SpinLock 自旋锁
 type SpinMutex struct {
-	conf *SpinMutexConfig
+	conf SpinMutexConfig
 	key  string // 锁的键
 
 	redisClient redis.UniversalClient
@@ -27,7 +34,7 @@ type SpinMutexConfig struct {
 }
 
 // NewSpinLock 创建一个重试锁
-func NewSpinMutex(client redis.UniversalClient, key string, config *SpinMutexConfig) *SpinMutex {
+func NewSpinMutex(client redis.UniversalClient, key string, config SpinMutexConfig) *SpinMutex {
 	return &SpinMutex{redisClient: client, key: key, conf: config}
 }
 

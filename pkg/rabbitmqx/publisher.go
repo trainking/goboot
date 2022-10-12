@@ -1,8 +1,9 @@
 package rabbitmqx
 
 import (
-	"github.com/wagslane/go-rabbitmq"
 	"strconv"
+
+	"github.com/wagslane/go-rabbitmq"
 )
 
 type Publisher struct {

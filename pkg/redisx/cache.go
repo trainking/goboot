@@ -3,11 +3,11 @@ package redisx
 import (
 	"context"
 	"errors"
-	"internal/singleflight"
 	"reflect"
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"golang.org/x/sync/singleflight"
 
 	jsoniter "github.com/json-iterator/go"
 )
