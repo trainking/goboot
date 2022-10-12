@@ -1,8 +1,9 @@
 package boot
 
 import (
-	"skyland-dev-peripheral/pkg/log"
 	"strconv"
+
+	"github.com/trainking/goboot/pkg/log"
 
 	"github.com/spf13/viper"
 )

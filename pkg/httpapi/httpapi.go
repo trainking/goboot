@@ -1,8 +1,8 @@
 package httpapi
 
 import (
-	"skyland-dev-peripheral/pkg/boot"
-	"skyland-dev-peripheral/pkg/utils"
+	"github.com/trainking/goboot/pkg/boot"
+	"github.com/trainking/goboot/pkg/utils"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"

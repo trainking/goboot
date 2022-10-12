@@ -14,7 +14,9 @@ require (
 	github.com/wagslane/go-rabbitmq v0.10.0
 	go.etcd.io/etcd/api/v3 v3.5.5
 	go.etcd.io/etcd/client/v3 v3.5.5
+	go.mongodb.org/mongo-driver v1.10.3
 	go.uber.org/zap v1.23.0
+	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29
 	google.golang.org/grpc v1.46.2
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 )
