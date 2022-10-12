@@ -33,10 +33,8 @@ type (
 func (b *BaseInstance) Init() error {
 	// 初始化日志
 	loggerConf := b.Config.GetStringMap("Logger")
-	log.InitLogger(log.Config{
-		Level:  loggerConf["level"].(string),
-		Target: loggerConf["target"].(string),
-		ID:     strconv.FormatInt(b.IntanceID, 10),
-	})
+	loggerConfig := log.NewConfigByMap(loggerConf)
+	loggerConfig.ID = strconv.FormatInt(b.IntanceID, 10)
+	log.InitLogger(loggerConfig)
 	return nil
 }
