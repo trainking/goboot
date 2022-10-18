@@ -16,7 +16,6 @@ type (
 
 		e         *echo.Echo
 		validator *StructValidator // 验证器
-		modules   []Module         // 加入的模块
 	}
 
 	// Router 路由
@@ -55,7 +54,7 @@ type (
 )
 
 // New creates a new application.
-func New(configPath string, addr string, instancdID int64, modules []Module) boot.Instance {
+func New(configPath string, addr string, instancdID int64) *App {
 	// 加载配置
 	v, err := utils.LoadConfigFileViper(configPath)
 	if err != nil {
@@ -68,7 +67,6 @@ func New(configPath string, addr string, instancdID int64, modules []Module) boo
 	app.Config = v
 	app.Addr = addr
 	app.IntanceID = instancdID
-	app.modules = modules
 	return app
 }
 
@@ -127,7 +125,12 @@ func (a *App) Start() error {
 	a.e.Validator = a.validator.transEchoValidator()
 
 	// 全局中间件
-	a.e.Use(middleware.Logger())
+	a.e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Skipper:          middleware.DefaultSkipper,
+		Format:           `{"level": "ACCESS", "ts":"${time_rfc3339}", "id": "${id}", "remote_ip":"${remote_ip}", "host":"${host}","method":"${method}","uri":"${uri}","user_agent":"${user_agent}", "status":${status},"latency_human":"${latency_human}"}` + "\n",
+		CustomTimeFormat: "2006-01-02T15:04:05.000Z",
+		Output:           log.GetWriter(),
+	}))
 	a.e.Use(middleware.Recover())
 	a.e.Use(middleware.CORS())
 	a.e.Use(middleware.Gzip())
@@ -139,9 +142,6 @@ func (a *App) Start() error {
 func (a *App) Init() error {
 	a.BaseInstance.Init()
 
-	for _, m := range a.modules {
-		a.AddModule(m)
-	}
 	return nil
 }
 

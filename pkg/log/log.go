@@ -38,3 +38,8 @@ func Error(args ...interface{}) {
 func Errorf(format string, args ...interface{}) {
 	_logger.sugar.Errorf(format, args...)
 }
+
+// GetWriter 获取输出流
+func GetWriter() io.Writer {
+	return _logger.w
+}

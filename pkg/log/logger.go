@@ -11,6 +11,7 @@ import (
 // 日志级别 Error > Warn > Info > Debug
 type Logger struct {
 	sugar *zap.SugaredLogger
+	w     zapcore.WriteSyncer
 }
 
 func (l *Logger) Debug(args ...interface{}) {
@@ -62,7 +63,7 @@ func New(c Config) *Logger {
 
 	zap.RedirectStdLog(_logger)
 
-	return &Logger{sugar: _logger.Sugar()}
+	return &Logger{sugar: _logger.Sugar(), w: writeSyncer}
 }
 
 // getLevel 转换级别，将关键字转换为zap的常量

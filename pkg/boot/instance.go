@@ -33,8 +33,11 @@ type (
 func (b *BaseInstance) Init() error {
 	// 初始化日志
 	loggerConf := b.Config.GetStringMap("Logger")
-	loggerConfig := log.NewConfigByMap(loggerConf)
-	loggerConfig.ID = strconv.FormatInt(b.IntanceID, 10)
-	log.InitLogger(loggerConfig)
+	config := log.NewConfigByMap(loggerConf)
+	config.ID = strconv.FormatInt(b.IntanceID, 10)
+	log.InitLogger(config)
+
+	// 初始化ID生成器
+	idgen.InitNode(b.IntanceID)
 	return nil
 }

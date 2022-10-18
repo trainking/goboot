@@ -56,8 +56,8 @@ func (t *JwtToken) ParseToken(tokenString string, data interface{}) error {
 	}
 
 	if claims, ok := token.Claims.(jwtV4.MapClaims); ok && token.Valid {
-		if data != nil {
-			dataB, _ := json.Marshal(claims["data"])
+		if cd, ok := claims["data"]; ok {
+			dataB, _ := json.Marshal(cd)
 			if err := json.Unmarshal(dataB, data); err != nil {
 				return err
 			}
