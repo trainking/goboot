@@ -2,7 +2,8 @@ package boot
 
 import (
 	"fmt"
-	"skyland-dev-peripheral/pkg/etcdx"
+
+	"github.com/trainking/goboot/pkg/etcdx"
 )
 
 type BaseServcie struct {

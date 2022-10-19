@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"github.com/trainking/goboot/pkg/boot"
+	"github.com/trainking/goboot/pkg/log"
 	"github.com/trainking/goboot/pkg/utils"
 
 	"github.com/go-playground/validator/v10"

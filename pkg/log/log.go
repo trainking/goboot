@@ -1,5 +1,7 @@
 package log
 
+import "io"
+
 var _logger *Logger
 
 func InitLogger(c Config) {
@@ -39,7 +41,7 @@ func Errorf(format string, args ...interface{}) {
 	_logger.sugar.Errorf(format, args...)
 }
 
-// GetWriter 获取输出流
+// GetWriter 鑾峰彇io.Writer
 func GetWriter() io.Writer {
 	return _logger.w
 }

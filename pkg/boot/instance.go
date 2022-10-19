@@ -3,6 +3,7 @@ package boot
 import (
 	"strconv"
 
+	"github.com/trainking/goboot/pkg/idgen"
 	"github.com/trainking/goboot/pkg/log"
 
 	"github.com/spf13/viper"
