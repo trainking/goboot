@@ -1,7 +1,7 @@
 package httpapi
 
 import (
-	"time"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/trainking/goboot/pkg/jwt"
