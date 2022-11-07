@@ -10,16 +10,29 @@ import (
 	"go.etcd.io/etcd/client/v3/naming/endpoints"
 )
 
+var (
+	// DefaultMetaData 默认元数据
+	DefaultMetaData = &MetaData{
+		Network: "http",
+	}
+)
+
 // ServiceManager 服务节点管理器
 type ServiceManager struct {
 	em      endpoints.Manager
 	xClient *ClientX
 
-	target   string // 服务名
-	leaseTTL int64  // 租约的过期时间
-	heartT   int    // 心跳维持时间,单位秒
+	metadate *MetaData // 元数据
+	target   string    // 服务名
+	leaseTTL int64     // 租约的过期时间
+	heartT   int       // 心跳维持时间,单位秒
 	ctx      context.Context
 	cancel   context.CancelFunc
+}
+
+// MetaData 元数据结构
+type MetaData struct {
+	Network string `json:"Network"`
 }
 
 // NewServiceManager 增加服务节点管理器
@@ -39,8 +52,13 @@ func NewServiceManager(xClient *ClientX, target string, leaseTTl int64, heartT i
 	}, nil
 }
 
+// SetMetaData 设置元数据
+func (s *ServiceManager) SetMetaData(m *MetaData) {
+	s.metadate = m
+}
+
 // Register 注册到节点
-func (s *ServiceManager) Register(addr string, metadata ...interface{}) error {
+func (s *ServiceManager) Register(addr string) error {
 	// 设置Context控制租约过期
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 
@@ -48,8 +66,10 @@ func (s *ServiceManager) Register(addr string, metadata ...interface{}) error {
 		Addr: addr,
 	}
 
-	if len(metadata) > 0 {
-		ep.Metadata = metadata[0]
+	if s.metadate != nil {
+		ep.Metadata = s.metadate
+	} else {
+		ep.Metadata = DefaultMetaData
 	}
 
 	lease := clientv3.NewLease(s.xClient.client)

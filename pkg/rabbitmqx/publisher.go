@@ -27,6 +27,23 @@ func NewPublisher(mqUrl string) (*Publisher, error) {
 	}}, nil
 }
 
+// NewPublisherByConfig 通过Config创建Publisher
+func NewPublisherByConfig(c *Config) (*Publisher, error) {
+	publisher, err := NewPublisher(c.MqUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	if c.Exchange != "" {
+		publisher.SetExchange(c.Exchange)
+	}
+	if c.RoutingKey != "" {
+		publisher.SetRoutingKey([]string{c.RoutingKey})
+	}
+
+	return publisher, nil
+}
+
 // SetExchange 设置交换机
 func (p *Publisher) SetExchange(exchange string) {
 	p.exchange = exchange

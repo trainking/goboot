@@ -2,6 +2,7 @@ package rabbitmqx
 
 import "github.com/wagslane/go-rabbitmq"
 
+// Consumer 消费者
 type Consumer struct {
 	consumer rabbitmq.Consumer
 
@@ -24,6 +25,26 @@ func NewConsumer(mqUrl string) (*Consumer, error) {
 		rabbitmq.WithConsumeOptionsBindingExchangeDurable,
 		rabbitmq.WithConsumeOptionsQueueDurable,
 	}}, nil
+}
+
+// NewConsumerByConfig 通过Config
+func NewConsumerByConfig(c *Config) (*Consumer, error) {
+	consumer, err := NewConsumer(c.MqUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	if c.Exchange != "" && c.ExType != "" {
+		consumer.SetExchange(c.Exchange, c.ExType)
+	}
+	if c.RoutingKey != "" {
+		consumer.SetRoutingKey([]string{c.RoutingKey})
+	}
+	if c.Queue != "" {
+		consumer.SetQueue(c.Queue)
+	}
+
+	return consumer, nil
 }
 
 // SetExchange 设置交换机

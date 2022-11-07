@@ -9,29 +9,45 @@ import (
 
 // MiddlewareBearerJwt 使用Bearer Token的一个中间件
 type MiddlewareBearerJwt struct {
-	jt     *jwt.JwtToken // jwt实现
-	expire time.Duration // token的过期时间
+	JT *jwt.JwtToken // jwt实现
 }
 
 // NewMiddlewareBearerJwt 使用Bearer Token的中间件生成器
-func NewMiddlewareBearerJwt(jwtSecert string, expire time.Duration) Middleware {
+func NewMiddlewareBearerJwt(jwtSecert string) Middleware {
 	return &MiddlewareBearerJwt{
-		jt:     jwt.NewJwtToken(jwtSecert),
-		expire: expire,
+		JT: jwt.NewJwtToken(jwtSecert),
 	}
+}
+
+// GetHeaderToken 从请求头获取Token
+func (m *MiddlewareBearerJwt) GetHeaderToken(c echo.Context) (string, error) {
+	token := c.Request().Header.Get(echo.HeaderAuthorization)
+	if token == "" {
+		return "", echo.ErrUnauthorized
+	}
+
+	if len(token) <= 7 {
+		return "", echo.ErrUnauthorized
+	}
+
+	if strings.ToLower(token[0:6]) != "bearer" {
+		return "", echo.ErrUnauthorized
+	}
+
+	return token[7:], nil
 }
 
 // MiddlewareFunc 对Middleware的实现
 func (m *MiddlewareBearerJwt) MiddlewareFunc() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			token := c.Request().Header.Get(echo.HeaderAuthorization)
-			if token == "" {
-				return echo.ErrUnauthorized
+			token, err := m.GetHeaderToken(c)
+			if err != nil {
+				return err
 			}
 
 			// 截取前面的Bearer
-			if err := m.jt.ParseToken(token[7:], nil); err != nil {
+			if err := m.JT.ParseToken(token, nil); err != nil {
 				return echo.ErrUnauthorized
 			}
 			return next(c)

@@ -9,7 +9,7 @@ import (
 )
 
 func TestNewDelayedQueue(t *testing.T) {
-	config := NewDeleayedQueueConfigByMap(map[string]interface{}{
+	config := NewConfigByMap(map[string]interface{}{
 		"mqurl":      "amqp://admin:123456@192.168.33.10:5672/app",
 		"exchange":   "test.deleayed.ex",
 		"routingkey": "test.deleayed.rk",
