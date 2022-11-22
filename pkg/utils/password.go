@@ -3,11 +3,13 @@ package utils
 import (
 	"crypto/sha256"
 	"fmt"
+
+	"github.com/trainking/goboot/pkg/random"
 )
 
 // Sha256PasswordEncrypt 对密码进行sha256加密
 func Sha256PasswordEncrypt(password string) (string, string, error) {
-	salt, err := RandStringHex(8)
+	salt, err := random.RandStringHex(8)
 	if err != nil {
 		return "", "", err
 	}
