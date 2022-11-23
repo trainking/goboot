@@ -9,8 +9,7 @@ import (
 
 // NewClient 从配置信息中创建client
 func NewClient(conf map[string]interface{}) redis.UniversalClient {
-	if mode, ok := conf["mode"]; ok {
-		mode = conf["mode"].(string)
+	if mode, ok := conf["mode"].(string); ok {
 		if mode == "cluster" {
 			return redis.NewClusterClient(newClusterOptions(conf))
 		}

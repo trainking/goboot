@@ -11,8 +11,8 @@ import (
 // DefaultSpinMutexConfig 默认一份自旋锁配置
 var DefaultSpinMutexConfig = SpinMutexConfig{
 	Retry:   3,
-	Sleep:   1 * time.Second,
-	Timeout: 5 * time.Second,
+	Sleep:   100 * time.Millisecond,
+	Timeout: 500 * time.Millisecond,
 }
 
 // SpinLock 自旋锁
