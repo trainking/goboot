@@ -26,19 +26,19 @@ func Infof(format string, args ...interface{}) {
 }
 
 func Warn(args ...interface{}) {
-	_logger.sugar.Warn(args...)
+	_logger.Warn(args...)
 }
 
 func Warnf(format string, args ...interface{}) {
-	_logger.sugar.Warnf(format, args...)
+	_logger.Warnf(format, args...)
 }
 
 func Error(args ...interface{}) {
-	_logger.sugar.Error(args...)
+	_logger.Error(args...)
 }
 
 func Errorf(format string, args ...interface{}) {
-	_logger.sugar.Errorf(format, args...)
+	_logger.Errorf(format, args...)
 }
 
 // GetWriter 获取输出流
