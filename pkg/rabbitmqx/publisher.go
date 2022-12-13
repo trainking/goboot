@@ -7,7 +7,6 @@ import (
 type Publisher struct {
 	publisher *rabbitmq.Publisher
 
-	exchange   string
 	routingKey []string
 	options    []func(*rabbitmq.PublishOptions)
 }
@@ -44,7 +43,7 @@ func NewPublisherByConfig(c *Config) (*Publisher, error) {
 
 // SetExchange 设置交换机
 func (p *Publisher) SetExchange(exchange string) {
-	p.exchange = exchange
+	p.options = append(p.options, rabbitmq.WithPublishOptionsExchange(exchange))
 }
 
 // SetRoutingKey 设置路由键
@@ -59,11 +58,7 @@ func (p *Publisher) SetOptions(options []func(*rabbitmq.PublishOptions)) {
 
 // Publish 推送消息
 func (p *Publisher) Publish(msg []byte) error {
-	if p.exchange != "" {
-		p.options = append(p.options, rabbitmq.WithPublishOptionsExchange(p.exchange))
-	}
 
-	// fmt.Printf("%+v", p)
 	return p.publisher.Publish(
 		msg,
 		p.routingKey,
@@ -73,11 +68,16 @@ func (p *Publisher) Publish(msg []byte) error {
 
 // PublishDelayed 发送延迟消息，ttl是毫秒为单位
 func (p *Publisher) PublishDelayed(msg []byte, ttl int64) error {
-	p.options = append(p.options, rabbitmq.WithPublishOptionsHeaders(rabbitmq.Table{
+	_delayedPoption := rabbitmq.WithPublishOptionsHeaders(rabbitmq.Table{
 		"x-delay": ttl,
-	}))
+	})
+	options := append(p.options, _delayedPoption)
 
-	return p.Publish(msg)
+	return p.publisher.Publish(
+		msg,
+		p.routingKey,
+		options...,
+	)
 }
 
 // Close 关闭消息推送者
