@@ -21,7 +21,7 @@ func TestNewDelayedQueue(t *testing.T) {
 	}
 
 	d.Consume(func(d rabbitmq.Delivery) (action rabbitmq.Action) {
-		fmt.Println(d.Body)
+		fmt.Printf("Body: %v, Time: %v \n", d.Body, time.Now().Unix())
 		return rabbitmq.Ack
 	})
 
@@ -39,7 +39,8 @@ func TestPublishDelayed(t *testing.T) {
 		t.Error(err)
 	}
 
-	if err := p.PublishDelayed([]byte("11111"), 3000); err != nil {
+	t.Logf("Send: %v", time.Now().Unix())
+	if err := p.PublishDelayed([]byte("11111"), 1000*10); err != nil {
 		t.Error(err)
 	}
 }

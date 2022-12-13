@@ -1,8 +1,6 @@
 package rabbitmqx
 
 import (
-	"strconv"
-
 	"github.com/wagslane/go-rabbitmq"
 )
 
@@ -65,6 +63,7 @@ func (p *Publisher) Publish(msg []byte) error {
 		p.options = append(p.options, rabbitmq.WithPublishOptionsExchange(p.exchange))
 	}
 
+	// fmt.Printf("%+v", p)
 	return p.publisher.Publish(
 		msg,
 		p.routingKey,
@@ -74,7 +73,10 @@ func (p *Publisher) Publish(msg []byte) error {
 
 // PublishDelayed 发送延迟消息，ttl是毫秒为单位
 func (p *Publisher) PublishDelayed(msg []byte, ttl int64) error {
-	p.options = append(p.options, rabbitmq.WithPublishOptionsExpiration(strconv.FormatInt(ttl, 10)))
+	p.options = append(p.options, rabbitmq.WithPublishOptionsHeaders(rabbitmq.Table{
+		"x-delay": ttl,
+	}))
+
 	return p.Publish(msg)
 }
 
