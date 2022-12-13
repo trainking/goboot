@@ -9,7 +9,7 @@ var _node *snowflake.Node
 // InitNode 初始化生成ID生成器
 func InitNode(instanceID int64) {
 	var err error
-	_node, err = snowflake.NewNode(1)
+	_node, err = snowflake.NewNode(instanceID)
 	if err != nil {
 		panic(err)
 	}
