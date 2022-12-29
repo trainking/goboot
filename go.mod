@@ -4,6 +4,8 @@ go 1.16
 
 require (
 	github.com/BurntSushi/toml v1.2.0 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.18.7
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.17.9
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/go-redis/redis/v8 v8.11.5
