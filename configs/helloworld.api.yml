@@ -1,0 +1,7 @@
+Logger:
+  Level: "debug"
+  Target: "helloworld.api"
+  Outpath: "./logs"
+UserServcie:
+  Etcd:
+    - "127.0.0.1:2379"
