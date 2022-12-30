@@ -1,6 +1,9 @@
 package log
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/natefinch/lumberjack"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -9,10 +12,21 @@ import (
 // Logger 内部实现使用zap.SugaredLogger
 // 实现apiserver.Logger接口
 // 日志级别 Error > Warn > Info > Debug
-type Logger struct {
-	sugar *zap.SugaredLogger
-	w     zapcore.WriteSyncer
-}
+
+type (
+	Logger struct {
+		sugar     *zap.SugaredLogger
+		w         zapcore.WriteSyncer
+		serviceID string
+	}
+
+	Tracer struct {
+		ReqeustID string `json:"request_id"`
+		Event     string `json:"event"`
+		Tag       string `json:"tag"`
+		Msg       string `json:"msg"`
+	}
+)
 
 func (l *Logger) Debug(args ...interface{}) {
 	l.sugar.Debug(args...)
@@ -46,6 +60,23 @@ func (l *Logger) Errorf(format string, args ...interface{}) {
 	l.sugar.Errorf(format, args...)
 }
 
+// Trace trace过滤所有日志
+func (l *Logger) Trace(requestID string, tag string, event string, msg string) {
+	// l.w.Write()
+	trageInfo := Tracer{
+		ReqeustID: requestID,
+		Tag:       tag,
+		Event:     event,
+		Msg:       msg,
+	}
+
+	fmt.Fprintf(l.w, "{\"level\":\"TRACE\", \"ts\":\"%s\", \"request_id\":\"%s\", \"event\":\"%s\", \"tag\":\"%s\", \"msg\":\"%s\", \"service_id\":\"%s\"}\n", time.Now().Format("2006-01-02T15:04:05.000Z"), trageInfo.ReqeustID, trageInfo.Event, trageInfo.Tag, trageInfo.Msg, l.serviceID)
+}
+
+func (l *Logger) Tracef(requestID string, tag string, event string, format string, args ...interface{}) {
+	l.Trace(requestID, tag, event, fmt.Sprintf(format, args...))
+}
+
 // New 通过自定义输出流，限制文件输出大小控制
 // 未设置自动清理
 // 未实现按日分文件
@@ -63,7 +94,7 @@ func New(c Config) *Logger {
 
 	zap.RedirectStdLog(_logger)
 
-	return &Logger{sugar: _logger.Sugar(), w: writeSyncer}
+	return &Logger{sugar: _logger.Sugar(), w: writeSyncer, serviceID: c.ServiceID()}
 }
 
 // getLevel 转换级别，将关键字转换为zap的常量

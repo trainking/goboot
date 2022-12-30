@@ -1,7 +1,6 @@
 package user
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -51,7 +50,7 @@ func (m *M) Group() httpapi.Group {
 
 func (m *M) GetUserInfo(c echo.Context) error {
 	requestID := httpapi.GetRequestID(c)
-	fmt.Printf("reqeustID: %v\n", requestID)
+	log.Trace(requestID, "GetUserInfo", "start", "start GetUserInfo")
 	ctx := c.Request().Context()
 	// ctx = context.WithValue(ctx, "RequestID", requestID)
 	ctx = metadata.AppendToOutgoingContext(ctx, echo.HeaderXRequestID, requestID)
