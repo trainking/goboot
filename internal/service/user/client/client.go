@@ -8,7 +8,7 @@ import (
 )
 
 func NewUserService(xClient *etcdx.ClientX) (pb.UserServiceClient, error) {
-	conn, err := xClient.DialGrpc(server.ServicePrefix+"UserService", grpc.WithInsecure())
+	conn, err := xClient.DialGrpc(server.ServicePrefix+"/UserService", grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}

@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/trainking/goboot/internal/api/helloworld/user"
 	"github.com/trainking/goboot/pkg/httpapi"
 	"github.com/trainking/goboot/pkg/log"
@@ -27,6 +28,7 @@ func main() {
 		log.Errorf("server init failed, Error: %v", err)
 		return
 	}
+	instance.Use(middleware.RequestID())
 
 	// 2. 加载模块
 	instance.AddModule(user.Module())

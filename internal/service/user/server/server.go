@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-const ServicePrefix = "/services/"
+const ServicePrefix = "/services"
 
 type (
 	Server struct {
