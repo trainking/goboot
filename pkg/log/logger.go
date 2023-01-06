@@ -12,7 +12,6 @@ import (
 // Logger 内部实现使用zap.SugaredLogger
 // 实现apiserver.Logger接口
 // 日志级别 Error > Warn > Info > Debug
-
 type (
 	Logger struct {
 		sugar     *zap.SugaredLogger
