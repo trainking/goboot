@@ -7,6 +7,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
 
+// BatchWriteMax 批量写入项目数量限制，以此为限，批量写入改为并行写入
+const BatchWriteMax = 25
+
 // GetClient 获取daynamoDB的客户端实例;
 // 必须在环境变量中设置:
 // - AWS_ACCESS_KEY_ID
