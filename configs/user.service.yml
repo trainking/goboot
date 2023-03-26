@@ -4,5 +4,10 @@ Logger:
   Outpath: "./logs"
 
 UserService:
+  Authentication:
+    Mode: "TLS"
+    ServerCrt: "../sslca/cert.csr"
+    ServerKey: "../sslca/private.key"
+    CaCrt: "../sslca/cert.crt"
   Etcd:
     - "192.168.1.14:2379"
