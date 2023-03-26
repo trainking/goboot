@@ -3,11 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/trainking/goboot/internal/service/user/server"
+	"github.com/trainking/goboot/pkg/boot"
 )
 
 var (
@@ -22,25 +20,8 @@ func main() {
 
 	instance := server.New(*name, *configPath, *addr, *instanceId)
 
-	// 1. 初始化
-	if err := instance.Init(); err != nil {
-		fmt.Println("server init failed, Error: ", err)
-		return
-	}
-
-	// 2. 优雅退出
-	go func() {
-		exitC := make(chan os.Signal, 1)
-		signal.Notify(exitC, syscall.SIGINT, syscall.SIGTERM)
-
-		<-exitC
-		instance.Stop()
-		os.Exit(0)
-	}()
-
-	// 3. 启动实例
 	fmt.Println("server start listen: ", *addr)
-	if err := instance.Start(); err != nil {
+	if err := boot.BootServe(instance); err != nil {
 		fmt.Println("server start failed, Error: ", err)
 		return
 	}
