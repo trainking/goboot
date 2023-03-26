@@ -2,21 +2,30 @@ package boot
 
 import (
 	"fmt"
+	"net"
 
 	"github.com/trainking/goboot/pkg/etcdx"
+	"google.golang.org/grpc"
 )
 
-type BaseServcie struct {
+// BaseService service的基础服务
+type BaseService struct {
 	BaseInstance
 
 	Prefix string // 服务前缀
 	Name   string // 服务名称
 
-	serviceManager *etcdx.ServiceManager
+	Listener       net.Listener          // 网络句柄
+	GrpcServer     *grpc.Server          // GRPC服务端
+	serviceManager *etcdx.ServiceManager // etcd注册
 }
 
-func (s *BaseServcie) Init() error {
-	s.BaseInstance.Init()
+func (s *BaseService) Init() error {
+	var err error
+	err = s.BaseInstance.Init()
+	if err != nil {
+		return err
+	}
 
 	xClient, err := etcdx.New(s.Config.GetStringSlice(fmt.Sprintf("%s.Etcd", s.Name)))
 	if err != nil {
@@ -28,15 +37,26 @@ func (s *BaseServcie) Init() error {
 		return err
 	}
 
-	return nil
+	s.Listener, err = net.Listen("tcp", s.Addr)
+	if err != nil {
+		return err
+	}
+
+	s.GrpcServer = grpc.NewServer()
+	err = s.serviceManager.Register(s.Addr)
+
+	return err
 }
 
-func (s *BaseServcie) Start() error {
-	return s.serviceManager.Register(s.Addr)
+func (s *BaseService) Start() error {
+	return s.GrpcServer.Serve(s.Listener)
 }
 
-func (s *BaseServcie) Stop() {
+func (s *BaseService) Stop() {
 	if s.serviceManager != nil {
 		s.serviceManager.Destory(s.Addr)
 	}
+
+	s.Listener.Close()
+	s.GrpcServer.Stop()
 }
