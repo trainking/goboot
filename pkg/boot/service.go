@@ -15,7 +15,7 @@ type BaseService struct {
 
 	Name string // 服务名称
 
-	Listener       net.Listener          // 网络句柄
+	Listener       net.Listener          // 网络监听
 	GrpcServer     *grpc.Server          // GRPC服务端
 	serviceManager *etcdx.ServiceManager // etcd注册
 }

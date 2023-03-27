@@ -63,5 +63,10 @@ func BootServe(instance Instance) error {
 		os.Exit(0)
 	}()
 
-	return instance.Start()
+	if err := instance.Start(); err != nil {
+		instance.Stop()
+		return err
+	}
+
+	return nil
 }
