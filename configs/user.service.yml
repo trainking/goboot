@@ -4,5 +4,10 @@ Logger:
   Outpath: "./logs"
 
 UserService:
+  Prefix: "/services"
+  Authentication:
+    Mode: "TLS"
+    CertFile: "../ssldata/cert.crt"
+    KeyFile: "../ssldata/private.key"
   Etcd:
-    - "192.168.1.14:2379"
+    - "192.168.1.9:2379"

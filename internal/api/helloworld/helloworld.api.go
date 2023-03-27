@@ -30,27 +30,4 @@ func main() {
 		fmt.Println("server start failed, Error: ", err)
 		return
 	}
-
-	// // 1. 初始化
-	// if err := instance.Init(); err != nil {
-	// 	log.Errorf("server init failed, Error: %v", err)
-	// 	return
-	// }
-
-	// // 3. 优雅退出
-	// go func() {
-	// 	exitC := make(chan os.Signal, 1)
-	// 	signal.Notify(exitC, syscall.SIGINT, syscall.SIGTERM)
-	// 	<-exitC
-
-	// 	instance.Stop()
-	// 	os.Exit(0)
-	// }()
-
-	// // 4. 启动实例
-	// log.Infof("server start listen: %s", *addr)
-	// if err := instance.Start(); err != nil {
-	// 	log.Errorf("server start failed, Error: %v", err)
-	// 	return
-	// }
 }
