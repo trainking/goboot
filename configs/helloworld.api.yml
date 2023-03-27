@@ -1,0 +1,11 @@
+Logger:
+  Level: "debug"
+  Target: "helloworld.api"
+  Outpath: "./logs"
+UserService:
+  Prefix: "/services"
+  Authentication:
+    Mode: "TLS"
+    CertFile: "../ssldata/cert.crt"
+  Etcd:
+    - "192.168.1.9:2379"

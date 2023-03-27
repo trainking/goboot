@@ -10,3 +10,9 @@ func BindValidate(c echo.Context, req interface{}) error {
 	err := c.Validate(req)
 	return err
 }
+
+// GetRequestID 获取RequestID
+func GetRequestID(c echo.Context) string {
+	res := c.Response()
+	return res.Header().Get(echo.HeaderXRequestID)
+}

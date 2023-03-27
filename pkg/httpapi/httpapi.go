@@ -15,6 +15,8 @@ type (
 	App struct {
 		boot.BaseInstance
 
+		modeules []Module
+
 		e         *echo.Echo
 		validator *StructValidator // 验证器
 	}
@@ -106,7 +108,7 @@ func (a *App) AddGroup(g Group) {
 
 // AddModule adds a module to the application.
 func (a *App) AddModule(m Module) {
-	m.Init(a) // 先执行初始化
+	a.modeules = append(a.modeules, m)
 	a.AddGroup(m.Group())
 }
 
@@ -142,6 +144,11 @@ func (a *App) Start() error {
 // Init 初始化阶段
 func (a *App) Init() error {
 	a.BaseInstance.Init()
+
+	// Init各个模块
+	for _, m := range a.modeules {
+		m.Init(a)
+	}
 
 	return nil
 }

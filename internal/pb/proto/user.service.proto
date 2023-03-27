@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option go_package = "./pb";
+
+package pb;
+
+service UserService {
+  rpc GetUserInfo(GetUserInfoArgs) returns (GetUserInfoReply) {}
+}
+
+message GetUserInfoArgs {
+  int64 user_id = 1; // 用户ID
+}
+message GetUserInfoReply {
+  string user_name = 1; // 用户名
+}
