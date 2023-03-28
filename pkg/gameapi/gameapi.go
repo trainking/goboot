@@ -17,6 +17,8 @@ type (
 		exitChan  chan struct{}   // 退出信号
 		waitGroup *sync.WaitGroup // 等待携程控制
 		closeOnce sync.Once       // 保证关闭只执行一次
+
+		callback SessionCallback // 会话回调
 	}
 )
 
@@ -33,6 +35,11 @@ func New(configPath string, addr string, instancdID int64) *App {
 	app.Addr = addr
 	app.IntanceID = instancdID
 	return app
+}
+
+// SetSessionCallback 设置sessioncallback
+func (a *App) SetSessionCallback(callback SessionCallback) {
+	a.callback = callback
 }
 
 // Init 初始化服务
@@ -60,16 +67,16 @@ func (a *App) Start() error {
 
 		conn, err := a.listener.Accept()
 		if err != nil {
-			return err
+			continue
 		}
 
 		a.waitGroup.Add(1)
 		go func() {
-			// TODO 处理连接数据
+			// 处理连接数据
+			NewSession(conn, a).Run()
 			a.waitGroup.Done()
 		}()
 	}
-	return nil
 }
 
 // Stop 停止服务
