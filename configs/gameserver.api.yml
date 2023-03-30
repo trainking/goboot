@@ -1,5 +1,5 @@
 # 传输层协议，tcp, kcp
-Network: "tcp"
+Network: "kcp"
 # 每个连接的读超时，秒为单位
 ConnReadTimeout: 5
 # 每个连接的写超时，秒为单位
@@ -8,3 +8,9 @@ ConnWriteTimeout: 5
 SendLimit: 1024
 # 最大接收消息包大小
 ReceiveLimit: 1024
+
+# 日志配置
+Logger:
+  Level: "debug"
+  Target: "gameserver.api"
+  Outpath: "./logs"

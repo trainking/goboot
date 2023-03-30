@@ -78,9 +78,9 @@ func (s *Session) Run() {
 		return
 	}
 
-	asyncDo(s.handleLoop, s.app.waitGroup)
-	asyncDo(s.readLoop, s.app.waitGroup)
-	asyncDo(s.writeLoop, s.app.waitGroup)
+	asyncDo(s.handleLoop, &s.app.waitGroup)
+	asyncDo(s.readLoop, &s.app.waitGroup)
+	asyncDo(s.writeLoop, &s.app.waitGroup)
 }
 
 // readLoop 读循环

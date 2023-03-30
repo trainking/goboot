@@ -16,16 +16,16 @@ type (
 	App struct {
 		boot.BaseInstance
 
-		listener  net.Listener    // 网络监听
-		exitChan  chan struct{}   // 退出信号
-		waitGroup *sync.WaitGroup // 等待携程控制
-		closeOnce sync.Once       // 保证关闭只执行一次
+		listener  net.Listener   // 网络监听
+		exitChan  chan struct{}  // 退出信号
+		waitGroup sync.WaitGroup // 等待携程控制
+		closeOnce sync.Once      // 保证关闭只执行一次
 
 		connectListener   Listener       // 会话建立时的连接监听器
 		disconnectListner Listener       // 会话断开时的连接监听器
 		creator           SessionCreator // 会话创建时，预处理的生成器
 
-		router map[uint32]Handler // 处理器映射
+		router map[uint16]Handler // 处理器映射
 	}
 
 	// Listener 监听器
@@ -52,7 +52,8 @@ func New(configPath string, addr string, instancdID int64) *App {
 	app.Config = v
 	app.Addr = addr
 	app.IntanceID = instancdID
-	app.router = make(map[uint32]Handler)
+	app.router = make(map[uint16]Handler)
+	app.exitChan = make(chan struct{})
 	return app
 }
 
@@ -129,7 +130,7 @@ func (a *App) Start() error {
 }
 
 // Stop 停止服务
-func (a *App) Stop() error {
+func (a *App) Stop() {
 	// 关闭资源
 	a.closeOnce.Do(func() {
 		close(a.exitChan)
@@ -138,7 +139,6 @@ func (a *App) Stop() error {
 
 	// 等待所有携程执行完
 	a.waitGroup.Wait()
-	return nil
 }
 
 // SetConnectListener 设置连接监听器
@@ -152,7 +152,7 @@ func (a *App) SetDisconnectListener(l Listener) {
 }
 
 // AddHandler 增加处理器
-func (a *App) AddHandler(opcode uint32, h Handler) {
+func (a *App) AddHandler(opcode uint16, h Handler) {
 	a.router[opcode] = h
 }
 
