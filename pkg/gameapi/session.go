@@ -39,7 +39,7 @@ type SessionCallback interface {
 func NewSession(conn net.Conn, app *App) *Session {
 	return &Session{
 		app:         app,
-		callback:    app.callback,
+		callback:    app,
 		conn:        conn,
 		closeChan:   make(chan struct{}),
 		sendChan:    make(chan Packet, app.Config.GetInt("SendLimit")),

@@ -15,6 +15,9 @@ type Packet interface {
 
 	// BodyLen 内容长度
 	BodyLen() uint32
+
+	// Body 获取完整body
+	Body() []byte
 }
 
 // PbPacket 基于Protobuffer的包协议
@@ -47,6 +50,11 @@ func (p *PbPacket) OpCode() uint32 {
 // BodyLen 报文内容长度
 func (p *PbPacket) BodyLen() uint32 {
 	return binary.BigEndian.Uint32(p.buff[0:2])
+}
+
+// Body 读取body所有字符
+func (p *PbPacket) Body() []byte {
+	return p.buff[4:]
 }
 
 // ReadPacket 读取数据打包
