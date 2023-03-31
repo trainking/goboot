@@ -1,6 +1,7 @@
 package gameapi
 
 import (
+	"context"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -51,7 +52,7 @@ type (
 	}
 
 	// Handler 处理类型
-	Handler func(*Session, []byte) error
+	Handler func(Context) error
 
 	// SessionCreator session创建生成器，做一些预处理
 	SessionCreator func(net.Conn, *App) *Session
@@ -223,7 +224,7 @@ func (a *App) OnMessage(session *Session, p Packet) bool {
 	// 消息的分发
 	if h, ok := a.router[p.OpCode()]; ok {
 		go func() {
-			if err := h(session, p.Body()); err != nil {
+			if err := h(NewDefaultContext(context.Background(), p.Body(), session)); err != nil {
 				log.Errorf("Handler %d Error: %s ", p.OpCode(), err)
 			}
 		}()

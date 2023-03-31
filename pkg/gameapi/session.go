@@ -5,8 +5,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"google.golang.org/protobuf/proto"
 )
 
 // Session 网络会话
@@ -124,16 +122,6 @@ func (s *Session) WritePacket(p Packet) (err error) {
 	case <-s.closeChan:
 		return ErrConnClosing
 	}
-}
-
-// WritePbPacket 写入Protobuf的包
-func (s *Session) WritePbPacket(opcode uint16, msg proto.Message) error {
-	p, err := CretaePbPacket(opcode, msg)
-	if err != nil {
-		return err
-	}
-
-	return s.WritePacket(p)
 }
 
 // Run 执行主体逻辑，三套循环

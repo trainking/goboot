@@ -7,7 +7,6 @@ import (
 	"github.com/trainking/goboot/internal/pb"
 	"github.com/trainking/goboot/pkg/gameapi"
 	"github.com/trainking/goboot/pkg/log"
-	"google.golang.org/protobuf/proto"
 )
 
 var Module = func() gameapi.Moddule {
@@ -39,13 +38,14 @@ func (m *GateWayM) Group() map[uint16]gameapi.Handler {
 }
 
 // C2S_PingHandler
-func (m *GateWayM) C2S_PingHandler(session *gameapi.Session, b []byte) error {
-
+func (m *GateWayM) C2S_PingHandler(c gameapi.Context) error {
 	var msg pb.C2S_Ping
-	proto.Unmarshal(b, &msg)
+	if err := c.Params(&msg); err != nil {
+		return err
+	}
 
 	log.Infof("Receive %v", msg.TickTime)
-	if err := session.WritePbPacket(uint16(pb.OpCode_Op_S2C_Pong), &pb.S2C_Pong{
+	if err := c.Send(uint16(pb.OpCode_Op_S2C_Pong), &pb.S2C_Pong{
 		OK: true,
 	}); err != nil {
 		return err
@@ -54,19 +54,21 @@ func (m *GateWayM) C2S_PingHandler(session *gameapi.Session, b []byte) error {
 }
 
 // C2S_LoginHandler 登录
-func (m *GateWayM) C2S_LoginHandler(session *gameapi.Session, b []byte) error {
+func (m *GateWayM) C2S_LoginHandler(c gameapi.Context) error {
 	var msg pb.C2S_Login
-	proto.Unmarshal(b, &msg)
+	if err := c.Params(&msg); err != nil {
+		return err
+	}
 
 	log.Infof("Login: %s %s", msg.Account, msg.Password)
 	if msg.Account == "admin" && msg.Password == "123456" {
-		session.Valid()
-		if err := session.WritePbPacket(uint16(pb.OpCode_Op_S2C_Login), &pb.S2C_Login{Ok: true}); err != nil {
+		c.Session().Valid()
+		if err := c.Send(uint16(pb.OpCode_Op_S2C_Login), &pb.S2C_Login{Ok: true}); err != nil {
 			return err
 		}
 		return nil
 	}
 
-	session.Close()
+	c.Session().Close()
 	return errors.New("session is valid failed")
 }
