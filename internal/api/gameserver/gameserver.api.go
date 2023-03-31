@@ -33,7 +33,7 @@ func main() {
 }
 
 // HandlerPing
-func HandlerPing(b []byte) error {
+func HandlerPing(session *gameapi.Session, b []byte) error {
 
 	var msg pb.C2S_Ping
 	proto.Unmarshal(b, &msg)

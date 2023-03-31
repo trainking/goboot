@@ -34,7 +34,7 @@ type (
 	}
 
 	// Handler 处理类型
-	Handler func([]byte) error
+	Handler func(*Session, []byte) error
 
 	// SessionCreator session创建生成器，做一些预处理
 	SessionCreator func(net.Conn, *App) *Session
@@ -170,11 +170,11 @@ func (a *App) OnConnect(session *Session) bool {
 func (a *App) OnMessage(session *Session, p Packet) bool {
 	// 消息的分发
 	if h, ok := a.router[p.OpCode()]; ok {
-		go func(b []byte) {
-			if err := h(b); err != nil {
+		go func() {
+			if err := h(session, p.Body()); err != nil {
 				log.Errorf("Handler %d Error: %s ", p.OpCode(), err)
 			}
-		}(p.Body())
+		}()
 	} else {
 		log.Errorf("Handler %d is No Handler", p.OpCode())
 		return false
