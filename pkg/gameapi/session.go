@@ -23,6 +23,8 @@ type Session struct {
 
 	callback SessionCallback // 回调函数
 
+	userId   int64       // sesssion所属的玩家ID
+	userData interface{} // session所属玩家额外数据
 }
 
 // SessionCallback session触发外部事件调用
@@ -91,16 +93,33 @@ func (s *Session) startValidTimer() {
 	}()
 }
 
+// UserID 获取玩家的UserID
+func (s *Session) UserID() int64 {
+	return s.userId
+}
+
+// UserData 获取玩家的额外数据
+func (s *Session) UserData() interface{} {
+	return s.userData
+}
+
+// SetUserData 设置玩家的额外数据
+func (s *Session) SetUserData(d interface{}) {
+	s.userData = d
+}
+
 // IsValid 是否验证为有效连接
 func (s *Session) IsValid() bool {
 	return atomic.LoadInt32(&s.isValid) > 0
 }
 
 // Valid 设置为有效连接
-func (s *Session) Valid() {
+func (s *Session) Valid(userId int64) {
 	if s.validTimer != nil {
 		s.validTimer.Stop()
 	}
+
+	s.userId = userId
 	atomic.StoreInt32(&s.isValid, 1)
 }
 

@@ -62,7 +62,7 @@ func (m *GateWayM) C2S_LoginHandler(c gameapi.Context) error {
 
 	log.Infof("Login: %s %s", msg.Account, msg.Password)
 	if msg.Account == "admin" && msg.Password == "123456" {
-		c.Session().Valid()
+		c.Session().Valid(1)
 		if err := c.Send(uint16(pb.OpCode_Op_S2C_Login), &pb.S2C_Login{Ok: true}); err != nil {
 			return err
 		}
