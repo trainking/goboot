@@ -34,7 +34,9 @@ func NewDefaultPacket(buff []byte, opcode uint16) *DefaultPacket {
 	p.buff = make([]byte, 4+len(buff))
 	binary.BigEndian.PutUint16(p.buff[0:2], uint16(len(buff)))
 	binary.BigEndian.PutUint16(p.buff[2:4], opcode)
-	copy(p.buff[4:], buff)
+	if len(buff) > 0 {
+		copy(p.buff[4:], buff)
+	}
 
 	return p
 }
@@ -70,13 +72,16 @@ func Packing(r io.Reader) (Packet, error) {
 	}
 
 	opcode := binary.BigEndian.Uint16(headrBytes[2:4])
-
 	bodyLength := binary.BigEndian.Uint16(headrBytes[0:2])
-	buff := make([]byte, bodyLength)
 
-	// 读取body
-	if _, err := io.ReadFull(r, buff); err != nil {
-		return nil, err
+	var buff []byte
+	if bodyLength > 0 {
+		buff = make([]byte, bodyLength)
+
+		// 读取body
+		if _, err := io.ReadFull(r, buff); err != nil {
+			return nil, err
+		}
 	}
 
 	return NewDefaultPacket(buff, opcode), nil

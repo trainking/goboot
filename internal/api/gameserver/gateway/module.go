@@ -18,18 +18,6 @@ type GateWayM struct {
 }
 
 func (m *GateWayM) Init(a *gameapi.App) {
-	// a.SetConnectListener(func(s *gameapi.Session) error {
-	// 	// 连接建立，五秒后未验证，则断开
-	// 	time.AfterFunc(time.Second*time.Duration(a.Config.GetInt("ValidTimeout")), func() {
-	// 		log.Info("ValidTimeout run")
-	// 		if !s.IsValid() {
-	// 			log.Error("session valid timeout")
-	// 			s.Close()
-	// 		}
-	// 	})
-
-	// 	return nil
-	// })
 
 	a.SetBeforeMiddleware(func(s *gameapi.Session, p gameapi.Packet) error {
 		if p.OpCode() == uint16(pb.OpCode_Op_C2S_Ping) || p.OpCode() == uint16(pb.OpCode_Op_C2S_Login) {

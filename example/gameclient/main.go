@@ -61,10 +61,12 @@ func main() {
 		fmt.Println(err)
 	}
 
-	time.Sleep(2 * time.Second)
+	time.Sleep(6 * time.Second)
 	if _, err := c.Write(p.Serialize()); err != nil {
 		fmt.Println(err)
 	}
 	time.Sleep(2 * time.Second)
+
+	fmt.Println("end")
 	c.Close()
 }
