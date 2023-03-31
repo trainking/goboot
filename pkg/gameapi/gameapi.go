@@ -170,10 +170,11 @@ func (a *App) OnConnect(session *Session) bool {
 func (a *App) OnMessage(session *Session, p Packet) bool {
 	// 消息的分发
 	if h, ok := a.router[p.OpCode()]; ok {
-		if err := h(p.Body()); err != nil {
-			log.Errorf("Handler %d Error: %s ", p.OpCode(), err)
-			return false
-		}
+		go func(b []byte) {
+			if err := h(b); err != nil {
+				log.Errorf("Handler %d Error: %s ", p.OpCode(), err)
+			}
+		}(p.Body())
 	} else {
 		log.Errorf("Handler %d is No Handler", p.OpCode())
 		return false

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/trainking/goboot/internal/pb"
@@ -38,5 +39,6 @@ func HandlerPing(b []byte) error {
 	proto.Unmarshal(b, &msg)
 
 	log.Infof("Receive %v", msg.TickTime)
+	time.Sleep(3 * time.Second)
 	return nil
 }

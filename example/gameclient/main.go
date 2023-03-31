@@ -24,6 +24,9 @@ func main() {
 	if _, err := c.Write(p.Serialize()); err != nil {
 		fmt.Println(err)
 	}
+	if _, err := c.Write(p.Serialize()); err != nil {
+		fmt.Println(err)
+	}
 
 	time.Sleep(10 * time.Second)
 	c.Close()
