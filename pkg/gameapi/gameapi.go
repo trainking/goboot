@@ -3,6 +3,7 @@ package gameapi
 import (
 	"net"
 	"sync"
+	"sync/atomic"
 
 	"github.com/pkg/errors"
 	"github.com/trainking/goboot/pkg/boot"
@@ -26,6 +27,8 @@ type (
 		creator           SessionCreator // 会话创建时，预处理的生成器
 
 		router map[uint16]Handler // 处理器映射
+
+		totalConn int64 // 连接数量
 	}
 
 	// Listener 监听器
@@ -55,6 +58,26 @@ func New(configPath string, addr string, instancdID int64) *App {
 	app.router = make(map[uint16]Handler)
 	app.exitChan = make(chan struct{})
 	return app
+}
+
+// SetConnectListener 设置连接监听器
+func (a *App) SetConnectListener(l Listener) {
+	a.connectListener = l
+}
+
+// SetDisconnectListener 设置断连监听器
+func (a *App) SetDisconnectListener(l Listener) {
+	a.disconnectListner = l
+}
+
+// AddHandler 增加处理器
+func (a *App) AddHandler(opcode uint16, h Handler) {
+	a.router[opcode] = h
+}
+
+// GetTotalConn 获取连接总数
+func (a *App) GetTotalConn() int64 {
+	return atomic.LoadInt64(&a.totalConn)
 }
 
 // Init 初始化服务
@@ -141,21 +164,6 @@ func (a *App) Stop() {
 	a.waitGroup.Wait()
 }
 
-// SetConnectListener 设置连接监听器
-func (a *App) SetConnectListener(l Listener) {
-	a.connectListener = l
-}
-
-// SetDisconnectListener 设置断连监听器
-func (a *App) SetDisconnectListener(l Listener) {
-	a.disconnectListner = l
-}
-
-// AddHandler 增加处理器
-func (a *App) AddHandler(opcode uint16, h Handler) {
-	a.router[opcode] = h
-}
-
 // OnConnect 连接时处理
 func (a *App) OnConnect(session *Session) bool {
 	if a.connectListener != nil {
@@ -163,6 +171,8 @@ func (a *App) OnConnect(session *Session) bool {
 			return false
 		}
 	}
+
+	atomic.AddInt64(&a.totalConn, 1)
 	return true
 }
 
@@ -184,6 +194,8 @@ func (a *App) OnMessage(session *Session, p Packet) bool {
 
 // OnDisConnect 短线处理
 func (a *App) OnDisConnect(sesssion *Session) {
+	atomic.AddInt64(&a.totalConn, -1)
+
 	if a.disconnectListner != nil {
 		a.disconnectListner.Do(sesssion)
 	}
