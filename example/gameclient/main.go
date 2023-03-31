@@ -27,27 +27,44 @@ func main() {
 
 			opecode := pb.OpCode(n.OpCode())
 			switch opecode {
-			case pb.OpCode_Pong:
+			case pb.OpCode_Op_S2C_Pong:
 				var result pb.S2C_Pong
 				proto.Unmarshal(n.Body(), &result)
 
-				fmt.Println(result.OK)
+				fmt.Printf("Pong: %v\n", result.OK)
+			case pb.OpCode_Op_S2C_Login:
+				var result pb.S2C_Login
+				proto.Unmarshal(n.Body(), &result)
+				fmt.Printf("Login: %v\n", result.Ok)
 			}
 		}
 	}()
 
 	msg := pb.C2S_Ping{TickTime: time.Now().Unix()}
-	p, err := gameapi.CretaePbPacket(uint16(pb.OpCode_Ping), &msg)
+	p, err := gameapi.CretaePbPacket(uint16(pb.OpCode_Op_C2S_Ping), &msg)
 	if err != nil {
 		fmt.Println(err)
 	}
 	if _, err := c.Write(p.Serialize()); err != nil {
 		fmt.Println(err)
 	}
+
+	msgLogin := pb.C2S_Login{Account: "admin", Password: "123456"}
+	p2, err := gameapi.CretaePbPacket(uint16(pb.OpCode_Op_C2S_Login), &msgLogin)
+	if err != nil {
+		fmt.Println(err)
+	}
+	c.Write(p2.Serialize())
+
+	time.Sleep(2 * time.Second)
 	if _, err := c.Write(p.Serialize()); err != nil {
 		fmt.Println(err)
 	}
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(2 * time.Second)
+	if _, err := c.Write(p.Serialize()); err != nil {
+		fmt.Println(err)
+	}
+	time.Sleep(2 * time.Second)
 	c.Close()
 }

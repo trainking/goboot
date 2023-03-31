@@ -22,9 +22,10 @@ type (
 		waitGroup sync.WaitGroup // 等待携程控制
 		closeOnce sync.Once      // 保证关闭只执行一次
 
-		connectListener   Listener       // 会话建立时的连接监听器
-		disconnectListner Listener       // 会话断开时的连接监听器
-		creator           SessionCreator // 会话创建时，预处理的生成器
+		connectListener    Listener       // 会话建立时的连接监听器
+		disconnectListener Listener       // 会话断开时的连接监听器
+		beforeMiddleware   Middleware     // 会话处理消息之前执行的监听器
+		creator            SessionCreator // 会话创建时，预处理的生成器
 
 		router map[uint16]Handler // 处理器映射
 
@@ -33,10 +34,11 @@ type (
 		modules []Moddule // 服务上的模块
 	}
 
+	// Middleware 中间件处理
+	Middleware func(*Session, Packet) error
+
 	// Listener 监听器
-	Listener interface {
-		Do(*Session) error
-	}
+	Listener func(*Session) error
 
 	// Module 模块
 	Moddule interface {
@@ -79,7 +81,12 @@ func (a *App) SetConnectListener(l Listener) {
 
 // SetDisconnectListener 设置断连监听器
 func (a *App) SetDisconnectListener(l Listener) {
-	a.disconnectListner = l
+	a.disconnectListener = l
+}
+
+// SetBeforeMiddleware 设置消息处理前中间件
+func (a *App) SetBeforeMiddleware(m Middleware) {
+	a.beforeMiddleware = m
 }
 
 // AddHandler 增加处理器
@@ -194,17 +201,25 @@ func (a *App) Stop() {
 // OnConnect 连接时处理
 func (a *App) OnConnect(session *Session) bool {
 	if a.connectListener != nil {
-		if err := a.connectListener.Do(session); err != nil {
+		if err := a.connectListener(session); err != nil {
 			return false
 		}
 	}
 
+	session.startValidTimer()
 	atomic.AddInt64(&a.totalConn, 1)
 	return true
 }
 
 // OnMessage 消息处理
 func (a *App) OnMessage(session *Session, p Packet) bool {
+	// 处理消息之前的预处理
+	if a.beforeMiddleware != nil {
+		if err := a.beforeMiddleware(session, p); err != nil {
+			log.Errorf("beforeMiddleware Error: %v", err)
+			return false
+		}
+	}
 	// 消息的分发
 	if h, ok := a.router[p.OpCode()]; ok {
 		go func() {
@@ -223,7 +238,7 @@ func (a *App) OnMessage(session *Session, p Packet) bool {
 func (a *App) OnDisConnect(sesssion *Session) {
 	atomic.AddInt64(&a.totalConn, -1)
 
-	if a.disconnectListner != nil {
-		a.disconnectListner.Do(sesssion)
+	if a.disconnectListener != nil {
+		a.disconnectListener(sesssion)
 	}
 }

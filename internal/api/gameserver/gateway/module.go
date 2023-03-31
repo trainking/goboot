@@ -1,6 +1,9 @@
 package gateway
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/trainking/goboot/internal/pb"
 	"github.com/trainking/goboot/pkg/gameapi"
 	"github.com/trainking/goboot/pkg/log"
@@ -15,12 +18,35 @@ type GateWayM struct {
 }
 
 func (m *GateWayM) Init(a *gameapi.App) {
+	// a.SetConnectListener(func(s *gameapi.Session) error {
+	// 	// 连接建立，五秒后未验证，则断开
+	// 	time.AfterFunc(time.Second*time.Duration(a.Config.GetInt("ValidTimeout")), func() {
+	// 		log.Info("ValidTimeout run")
+	// 		if !s.IsValid() {
+	// 			log.Error("session valid timeout")
+	// 			s.Close()
+	// 		}
+	// 	})
 
+	// 	return nil
+	// })
+
+	a.SetBeforeMiddleware(func(s *gameapi.Session, p gameapi.Packet) error {
+		if p.OpCode() == uint16(pb.OpCode_Op_C2S_Ping) || p.OpCode() == uint16(pb.OpCode_Op_C2S_Login) {
+			return nil
+		}
+
+		if !s.IsValid() {
+			return fmt.Errorf("session is valid, opcode: %d", p.OpCode())
+		}
+		return nil
+	})
 }
 
 func (m *GateWayM) Group() map[uint16]gameapi.Handler {
 	return map[uint16]gameapi.Handler{
-		uint16(pb.OpCode_Ping): m.C2S_PingHandler,
+		uint16(pb.OpCode_Op_C2S_Ping):  m.C2S_PingHandler,
+		uint16(pb.OpCode_Op_C2S_Login): m.C2S_LoginHandler,
 	}
 }
 
@@ -31,10 +57,28 @@ func (m *GateWayM) C2S_PingHandler(session *gameapi.Session, b []byte) error {
 	proto.Unmarshal(b, &msg)
 
 	log.Infof("Receive %v", msg.TickTime)
-	if err := session.WritePbPacket(uint16(pb.OpCode_Pong), &pb.S2C_Pong{
+	if err := session.WritePbPacket(uint16(pb.OpCode_Op_S2C_Pong), &pb.S2C_Pong{
 		OK: true,
 	}); err != nil {
 		return err
 	}
 	return nil
+}
+
+// C2S_LoginHandler 登录
+func (m *GateWayM) C2S_LoginHandler(session *gameapi.Session, b []byte) error {
+	var msg pb.C2S_Login
+	proto.Unmarshal(b, &msg)
+
+	log.Infof("Login: %s %s", msg.Account, msg.Password)
+	if msg.Account == "admin" && msg.Password == "123456" {
+		session.Valid()
+		if err := session.WritePbPacket(uint16(pb.OpCode_Op_S2C_Login), &pb.S2C_Login{Ok: true}); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	session.Close()
+	return errors.New("session is valid failed")
 }
