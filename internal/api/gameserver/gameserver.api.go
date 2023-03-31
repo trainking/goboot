@@ -4,11 +4,9 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/trainking/goboot/internal/pb"
+	"github.com/trainking/goboot/internal/api/gameserver/gateway"
 	"github.com/trainking/goboot/pkg/boot"
 	"github.com/trainking/goboot/pkg/gameapi"
-	"github.com/trainking/goboot/pkg/log"
 )
 
 var (
@@ -22,26 +20,11 @@ func main() {
 
 	instance := gameapi.New(*configPath, *addr, *instanceId)
 
-	instance.AddHandler(uint16(pb.OpCode_Ping), HandlerPing)
+	instance.AddModule(gateway.Module())
 
 	fmt.Println("game server start listen: ", *addr)
 	if err := boot.BootServe(instance); err != nil {
 		fmt.Println("server start failed, Error: ", err)
 		return
 	}
-}
-
-// HandlerPing
-func HandlerPing(session *gameapi.Session, b []byte) error {
-
-	var msg pb.C2S_Ping
-	proto.Unmarshal(b, &msg)
-
-	log.Infof("Receive %v", msg.TickTime)
-	if err := session.WritePbPacket(uint16(pb.OpCode_Pong), &pb.S2C_Pong{
-		OK: true,
-	}); err != nil {
-		return err
-	}
-	return nil
 }

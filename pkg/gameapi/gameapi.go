@@ -29,11 +29,23 @@ type (
 		router map[uint16]Handler // 处理器映射
 
 		totalConn int64 // 连接数量
+
+		modules []Moddule // 服务上的模块
 	}
 
 	// Listener 监听器
 	Listener interface {
 		Do(*Session) error
+	}
+
+	// Module 模块
+	Moddule interface {
+
+		// 初始化模块
+		Init(app *App)
+
+		// 模块的分组路由
+		Group() map[uint16]Handler
 	}
 
 	// Handler 处理类型
@@ -75,6 +87,11 @@ func (a *App) AddHandler(opcode uint16, h Handler) {
 	a.router[opcode] = h
 }
 
+// AddModule 增加所有模块
+func (a *App) AddModule(module Moddule) {
+	a.modules = append(a.modules, module)
+}
+
 // GetTotalConn 获取连接总数
 func (a *App) GetTotalConn() int64 {
 	return atomic.LoadInt64(&a.totalConn)
@@ -84,6 +101,16 @@ func (a *App) GetTotalConn() int64 {
 func (a *App) Init() (err error) {
 	if err = a.BaseInstance.Init(); err != nil {
 		return err
+	}
+
+	// 初始化各个模块
+	for _, m := range a.modules {
+		m.Init(a)
+
+		// 加入路由映射
+		for k, v := range m.Group() {
+			a.AddHandler(k, v)
+		}
 	}
 
 	// 根据配置传输层协议

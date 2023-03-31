@@ -10,7 +10,6 @@ require (
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang-jwt/jwt/v4 v4.4.2
-	github.com/golang/protobuf v1.5.2
 	github.com/json-iterator/go v1.1.12
 	github.com/klauspost/reedsolomon v1.11.7 // indirect
 	github.com/labstack/echo/v4 v4.9.0
