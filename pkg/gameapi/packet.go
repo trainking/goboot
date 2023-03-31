@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"io"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 // Packet 包接口
@@ -22,14 +22,14 @@ type Packet interface {
 	Body() []byte
 }
 
-// PbPacket 基于Protobuffer的包协议
-type PbPacket struct {
+// DefaultPacket 基于Protobuffer的包协议
+type DefaultPacket struct {
 	buff []byte
 }
 
 // NewPbPacket 新建一个pb的Packet
-func NewPbPacket(buff []byte, opcode uint16) *PbPacket {
-	p := new(PbPacket)
+func NewDefaultPacket(buff []byte, opcode uint16) *DefaultPacket {
+	p := new(DefaultPacket)
 
 	p.buff = make([]byte, 4+len(buff))
 	binary.BigEndian.PutUint16(p.buff[0:2], uint16(len(buff)))
@@ -40,27 +40,27 @@ func NewPbPacket(buff []byte, opcode uint16) *PbPacket {
 }
 
 // Serialize 序列化，输出完整的字符数组
-func (p *PbPacket) Serialize() []byte {
+func (p *DefaultPacket) Serialize() []byte {
 	return p.buff
 }
 
 // OpCode 包的2-3位为OpCode
-func (p *PbPacket) OpCode() uint16 {
+func (p *DefaultPacket) OpCode() uint16 {
 	return binary.BigEndian.Uint16(p.buff[2:4])
 }
 
 // BodyLen 报文内容长度
-func (p *PbPacket) BodyLen() uint16 {
+func (p *DefaultPacket) BodyLen() uint16 {
 	return binary.BigEndian.Uint16(p.buff[0:2])
 }
 
 // Body 读取body所有字符
-func (p *PbPacket) Body() []byte {
+func (p *DefaultPacket) Body() []byte {
 	return p.buff[4:]
 }
 
-// ReadPacket 读取数据打包
-func ReadPacket(r io.Reader) (Packet, error) {
+// Packing 从io流中读取出包
+func Packing(r io.Reader) (Packet, error) {
 	// 4字节头
 	var headrBytes = make([]byte, 4)
 
@@ -79,7 +79,7 @@ func ReadPacket(r io.Reader) (Packet, error) {
 		return nil, err
 	}
 
-	return NewPbPacket(buff, opcode), nil
+	return NewDefaultPacket(buff, opcode), nil
 }
 
 // CretaePbPacket 创建要给protobuf的包
@@ -89,5 +89,5 @@ func CretaePbPacket(opcode uint16, msg proto.Message) (Packet, error) {
 		return nil, err
 	}
 
-	return NewPbPacket(msgB, opcode), nil
+	return NewDefaultPacket(msgB, opcode), nil
 }

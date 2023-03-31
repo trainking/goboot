@@ -8,7 +8,9 @@ package pb;
 enum OpCode {
   None = 0;
   Ping = 1;
+  Pong = 2;
 }
 
 // C2S_Ping 客户端向服务器发送心跳
 message C2S_Ping { int64 TickTime = 1; }
+message S2C_Pong { bool OK = 1; }

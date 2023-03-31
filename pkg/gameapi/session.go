@@ -5,6 +5,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"google.golang.org/protobuf/proto"
 )
 
 // Session 网络会话
@@ -69,6 +71,36 @@ func (s *Session) IsClosed() bool {
 	return atomic.LoadInt32(&s.closeFlag) > 0
 }
 
+// WritePacket 写入发送包
+func (s *Session) WritePacket(p Packet) (err error) {
+	if s.IsClosed() {
+		return ErrConnClosing
+	}
+
+	defer func() {
+		if e := recover(); e != nil {
+			err = ErrConnClosing
+		}
+	}()
+
+	select {
+	case s.sendChan <- p:
+		return nil
+	case <-s.closeChan:
+		return ErrConnClosing
+	}
+}
+
+// WritePbPacket 写入Protobuf的包
+func (s *Session) WritePbPacket(opcode uint16, msg proto.Message) error {
+	p, err := CretaePbPacket(opcode, msg)
+	if err != nil {
+		return err
+	}
+
+	return s.WritePacket(p)
+}
+
 // Run 执行主体逻辑，三套循环
 // readLoop 读循环
 // writeLoop 写循环
@@ -102,7 +134,7 @@ func (s *Session) readLoop() {
 
 		// 设置连接读取超时
 		s.conn.SetReadDeadline(time.Now().Add(time.Duration(s.app.Config.GetInt("ConnReadTimeout")) * time.Second))
-		p, err := ReadPacket(s.conn)
+		p, err := Packing(s.conn)
 		if err != nil {
 			return
 		}

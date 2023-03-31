@@ -7,6 +7,7 @@ import (
 	"github.com/trainking/goboot/internal/pb"
 	"github.com/trainking/goboot/pkg/gameapi"
 	"github.com/xtaci/kcp-go"
+	"google.golang.org/protobuf/proto"
 )
 
 func main() {
@@ -15,6 +16,25 @@ func main() {
 		panic(e)
 	}
 	defer c.Close()
+
+	go func() {
+		for {
+			n, e := gameapi.Packing(c)
+			if nil != e {
+				fmt.Println("read error:", e.Error())
+				return
+			}
+
+			opecode := pb.OpCode(n.OpCode())
+			switch opecode {
+			case pb.OpCode_Pong:
+				var result pb.S2C_Pong
+				proto.Unmarshal(n.Body(), &result)
+
+				fmt.Println(result.OK)
+			}
+		}
+	}()
 
 	msg := pb.C2S_Ping{TickTime: time.Now().Unix()}
 	p, err := gameapi.CretaePbPacket(uint16(pb.OpCode_Ping), &msg)

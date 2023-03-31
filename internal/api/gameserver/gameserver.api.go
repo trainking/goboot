@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/trainking/goboot/internal/pb"
@@ -39,6 +38,10 @@ func HandlerPing(session *gameapi.Session, b []byte) error {
 	proto.Unmarshal(b, &msg)
 
 	log.Infof("Receive %v", msg.TickTime)
-	time.Sleep(3 * time.Second)
+	if err := session.WritePbPacket(uint16(pb.OpCode_Pong), &pb.S2C_Pong{
+		OK: true,
+	}); err != nil {
+		return err
+	}
 	return nil
 }
