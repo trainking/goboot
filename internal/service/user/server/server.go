@@ -7,8 +7,6 @@ import (
 	"github.com/trainking/goboot/pkg/utils"
 )
 
-const ServicePrefix = "/services"
-
 type (
 	Server struct {
 		pb.UnimplementedUserServiceServer
@@ -24,7 +22,6 @@ func New(name string, configPath string, addr string, instanceId int64) boot.Ins
 	}
 
 	server := new(Server)
-	server.Prefix = ServicePrefix
 	server.Name = name
 	server.Config = v
 	server.Addr = addr

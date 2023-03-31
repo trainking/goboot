@@ -24,12 +24,14 @@ type M struct {
 }
 
 func (m *M) Init(app *httpapi.App) {
+
+	log.Debugf("Init Module Config: %v", app.Config)
 	m.Config = app.Config
 
 	var err error
-	m.UserService, err = userClient.NewUserServiceByMap(app.Config.GetStringMap("UserService"))
+	m.UserService, err = userClient.NewUserService("UserService", app.Config)
 	if err != nil {
-		log.Errorf("NewUserServiceByMap failed: %v", err)
+		log.Errorf("userClient.NewUserService failed: %v", err)
 		return
 	}
 }
