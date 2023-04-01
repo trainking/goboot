@@ -2,45 +2,96 @@
 
 - [goboot](#goboot)
   - [概述](#概述)
-  - [开发指南](#开发指南)
-    - [目录](#目录)
-    - [设计](#设计)
+  - [快速开始](#快速开始)
+    - [开发一个http服务器](#开发一个http服务器)
+    - [开发一个gRPC服务](#开发一个grpc服务)
+    - [开发一个游戏服务器](#开发一个游戏服务器)
+  - [参考](#参考)
+    - [实例](#实例)
+    - [Module](#module)
+    - [Handler](#handler)
+    - [服务注册和发现](#服务注册和发现)
+    - [日志](#日志)
+  - [注意事项](#注意事项)
 
 
 ## 概述
 
 **goboot**是个一个**Golang**开发过程中，使用的一些经验总结的库，涵盖`Web`开发和游戏开发领域。
 
-## 开发指南
+## 快速开始
 
-### 目录
+### 开发一个http服务器
 
-* `bin`: 编译后程序目录
-* `cmd`: 自定义命令工具
-* `configs`: 配置文件存放目录
-* `internal`: 具体项目的逻辑存放目录
-* `pkg`: 通用包目录
-  - `boot`：项目启动设定包
-  - `encrypt`：加密解密包
-  - `errgroup`：一个携程编组实现
-  - `etcdx`: etcd操作拓展包
-  - `httpapi`: 基于Echo框架实现的http api实现
-  - `idgen`：id生成器包
-  - `jwt`： jwt的实现
-  - `log`: 日志库的实现
-  - `mongodbx`: mongodb操作拓展包
-  - `rabbitmqx`：rabbitmq操作拓展包
-  - `random`: 随机函数包
-  - `redisx`: 基于redis6.0的工具实现
-  - `utils`: 一些工具函数的实现
+**goboot**开发http服务器，只需要传入调用`httpapi`包，传入配置文件地址，监听端口，以及实例ID:
 
-### 设计
+```go
+instance := httpapi.New(*configPath, *addr, *instanceId)
 
-该脚手架使用多框架融合，主要使用以下：
+...
 
-* Echo: 一个http的api框架
-* gRPC：goole开源的RPC框架
+// 启动
+boot.BootServe(instance)
+```
 
-具体使用，参考如下文档：
+通过模块化的Module，来建立API，一个Module要遵循`httpapi.Module`的定义：
 
-1. [设计思想](./docs/guide/%E8%AE%BE%E8%AE%A1%E6%80%9D%E6%83%B3.md)
+```golang
+Module interface {
+		// 初始化模块
+		Init(app *App)
+		// 模块的分组路由
+		Group() Group
+}
+```
+
+### 开发一个gRPC服务
+
+**goboot**开发gRPC服务器，同样只需要使用：
+
+```
+instance := server.New(*name, *configPath, *addr, *instanceId)
+
+boot.BootServe(instance)
+```
+
+不同的是，这里的server需要定制protobuf文件实现。
+
+### 开发一个游戏服务器
+
+**goboot**开发游戏服务器，使用的`gameapi`包的实现：
+
+```golang
+instance := gameapi.New(*configPath, *addr, *instanceId)
+
+boot.BootServe(instance)
+```
+
+同样使用的模块化的管理接口，不同的是，gameapi使用的`opcode->protobufMessage`的映射管理作为路由：
+
+```go
+Moddule interface {
+
+		// 初始化模块
+		Init(app *App)
+
+		// 模块的分组路由
+		Group() map[uint16]Handler
+}
+```
+
+## 参考
+
+### 实例
+
+### Module
+
+### Handler
+
+### 服务注册和发现
+
+### 日志
+
+## 注意事项
+
+1. 使用`gameapi`开发游戏服务器时，opcode为0已经被心跳包占用

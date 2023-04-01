@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+option go_package = "./pb";
+
+package pb;
+
+// OpCode 操作符定义
+enum OpCode {
+  None = 0;
+  Op_C2S_Ping = 1;
+  Op_S2C_Pong = 2;
+  Op_C2S_Login = 3;
+  Op_S2C_Login = 4;
+}
+
+// C2S_Ping 客户端向服务器发送心跳
+message C2S_Ping { int64 TickTime = 1; }
+message S2C_Pong { bool OK = 1; }
+
+// C2S_Login 登录服务器
+message C2S_Login {
+  string Account = 1;
+  string Password = 2;
+}
+message S2C_Login { bool Ok = 1; }

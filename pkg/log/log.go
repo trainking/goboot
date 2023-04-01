@@ -41,6 +41,14 @@ func Errorf(format string, args ...interface{}) {
 	_logger.Errorf(format, args...)
 }
 
+func Trace(requestID string, tag string, event string, msg string) {
+	_logger.Trace(requestID, tag, event, msg)
+}
+
+func Tracef(requestID string, tag string, event string, format string, args ...interface{}) {
+	_logger.Tracef(requestID, tag, event, format, args...)
+}
+
 // GetWriter 获取输出流
 func GetWriter() io.Writer {
 	return _logger.w
