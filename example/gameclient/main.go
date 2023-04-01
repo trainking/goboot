@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/trainking/goboot/example/gameclient/client"
 	"github.com/trainking/goboot/internal/pb"
-	"github.com/trainking/goboot/pkg/gameapi"
 	"github.com/xtaci/kcp-go"
 	"google.golang.org/protobuf/proto"
 )
@@ -17,56 +17,49 @@ func main() {
 	}
 	defer c.Close()
 
+	cc := client.NewClient(c, 1024, 1024)
+
 	go func() {
-		for {
-			n, e := gameapi.Packing(c)
-			if nil != e {
-				fmt.Println("read error:", e.Error())
-				return
-			}
-
-			opecode := pb.OpCode(n.OpCode())
-			switch opecode {
+		for p := range cc.Receive() {
+			opcode := pb.OpCode(p.OpCode())
+			switch opcode {
 			case pb.OpCode_Op_S2C_Pong:
-				var result pb.S2C_Pong
-				proto.Unmarshal(n.Body(), &result)
-
-				fmt.Printf("Pong: %v\n", result.OK)
+				var r pb.S2C_Pong
+				proto.Unmarshal(p.Body(), &r)
+				fmt.Printf("Pong: %v\n", r.OK)
 			case pb.OpCode_Op_S2C_Login:
-				var result pb.S2C_Login
-				proto.Unmarshal(n.Body(), &result)
-				fmt.Printf("Login: %v\n", result.Ok)
+				var r pb.S2C_Login
+				proto.Unmarshal(p.Body(), &r)
+				fmt.Printf("Login: %v\n", r.Ok)
 			}
 		}
 	}()
 
 	msg := pb.C2S_Ping{TickTime: time.Now().Unix()}
-	p, err := gameapi.CretaePbPacket(uint16(pb.OpCode_Op_C2S_Ping), &msg)
-	if err != nil {
+	if err := cc.Send(uint16(pb.OpCode_Op_C2S_Ping), &msg); err != nil {
 		fmt.Println(err)
-	}
-	if _, err := c.Write(p.Serialize()); err != nil {
-		fmt.Println(err)
+		return
 	}
 
 	msgLogin := pb.C2S_Login{Account: "admin", Password: "123456"}
-	p2, err := gameapi.CretaePbPacket(uint16(pb.OpCode_Op_C2S_Login), &msgLogin)
-	if err != nil {
+	if err := cc.Send(uint16(pb.OpCode_Op_C2S_Login), &msgLogin); err != nil {
 		fmt.Println(err)
+		return
 	}
-	c.Write(p2.Serialize())
 
 	time.Sleep(2 * time.Second)
-	if _, err := c.Write(p.Serialize()); err != nil {
+	if err := cc.Send(uint16(pb.OpCode_Op_C2S_Ping), &msg); err != nil {
 		fmt.Println(err)
+		return
 	}
 
 	time.Sleep(6 * time.Second)
-	if _, err := c.Write(p.Serialize()); err != nil {
+	if err := cc.Send(uint16(pb.OpCode_Op_C2S_Ping), &msg); err != nil {
 		fmt.Println(err)
+		return
 	}
 	time.Sleep(2 * time.Second)
 
 	fmt.Println("end")
-	c.Close()
+	cc.Close()
 }
