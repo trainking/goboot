@@ -1,22 +1,26 @@
 package gameapi
 
 import (
+	"context"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"golang.org/x/time/rate"
 )
 
 // Session 网络会话
 type Session struct {
 	app *App
 
-	conn       net.Conn      // 网络连接
-	closeOnce  sync.Once     // 关闭控制
-	closeFlag  int32         // 关闭标志
-	closeChan  chan struct{} // 关闭channel
-	isValid    int32         // 是否验证为有效连接
-	validTimer *time.Timer   // 设置验证超时
+	conn         net.Conn      // 网络连接
+	closeOnce    sync.Once     // 关闭控制
+	closeFlag    int32         // 关闭标志
+	closeChan    chan struct{} // 关闭channel
+	isValid      int32         // 是否验证为有效连接
+	validTimer   *time.Timer   // 设置验证超时
+	heartLimiter *rate.Limiter // 心跳限制数量
 
 	sendChan    chan Packet // 发送队列
 	receiveChan chan Packet // 接收队列
@@ -43,12 +47,13 @@ type SessionCallback interface {
 // NewSession 新建一个Session
 func NewSession(conn net.Conn, app *App) *Session {
 	return &Session{
-		app:         app,
-		callback:    app,
-		conn:        conn,
-		closeChan:   make(chan struct{}),
-		sendChan:    make(chan Packet, app.Config.GetInt("SendLimit")),
-		receiveChan: make(chan Packet, app.Config.GetInt("ReceiveLimit")),
+		app:          app,
+		callback:     app,
+		conn:         conn,
+		closeChan:    make(chan struct{}),
+		sendChan:     make(chan Packet, app.Config.GetInt("SendLimit")),
+		receiveChan:  make(chan Packet, app.Config.GetInt("ReceiveLimit")),
+		heartLimiter: rate.NewLimiter(rate.Every(time.Minute), app.Config.GetInt("HeartLimit")),
 	}
 }
 
@@ -229,6 +234,16 @@ func (s *Session) handleLoop() {
 			if s.IsClosed() {
 				return
 			}
+
+			// 处理心跳包
+			if p.OpCode() == 0 {
+				// 心跳包过载，则跳出
+				if err := s.heartLimiter.Wait(context.Background()); err != nil {
+					return
+				}
+				continue
+			}
+
 			if !s.callback.OnMessage(s, p) {
 				return
 			}

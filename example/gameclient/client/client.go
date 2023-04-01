@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/trainking/goboot/pkg/gameapi"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -15,21 +16,30 @@ type Client struct {
 	closeOnce sync.Once
 	waitGroup sync.WaitGroup
 
+	running bool
+
 	receiveChan chan gameapi.Packet
 	sendChan    chan gameapi.Packet
 }
 
 // NewClient 新客户端
-func NewClient(conn net.Conn, readLimit int, sendLimit int) *Client {
+// conn 连接协议实例
+// readLimit 最大读取包
+// sendLimit 最大写入包
+// heart 心跳周期
+func NewClient(conn net.Conn, readLimit int, sendLimit int, heart time.Duration) *Client {
 	client := &Client{
 		Conn:        conn,
 		closeConn:   make(chan struct{}),
 		receiveChan: make(chan gameapi.Packet, readLimit),
 		sendChan:    make(chan gameapi.Packet, sendLimit),
+		running:     true,
 	}
 
 	client.asyncDo(client.readLoop)
 	client.asyncDo(client.sendLoop)
+
+	client.KeepAlive(heart)
 
 	return client
 }
@@ -40,6 +50,26 @@ func (c *Client) asyncDo(fn func()) {
 		defer c.waitGroup.Done()
 		fn()
 	}()
+}
+
+// Ping 发送心跳
+func (c *Client) Ping() {
+	c.Conn.Write(gameapi.HeartPacket.Serialize())
+}
+
+// KeepAlive 保持心跳
+func (c *Client) KeepAlive(interval time.Duration) {
+	if !c.running {
+		return
+	}
+	if interval <= 0 {
+		interval = time.Second * 30
+	}
+
+	time.AfterFunc(interval, func() {
+		c.Ping()
+		c.KeepAlive(interval)
+	})
 }
 
 // readLoop 读取循环
@@ -109,6 +139,7 @@ func (c *Client) Receive() <-chan gameapi.Packet {
 func (c *Client) close() {
 	c.closeOnce.Do(func() {
 		close(c.closeConn)
+		c.running = false
 		c.Conn.Close()
 	})
 }

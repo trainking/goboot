@@ -7,6 +7,9 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// HeartPacket 默认使用0号协议作为心跳包的协议
+var HeartPacket Packet = NewDefaultPacket(nil, 0)
+
 // Packet 包接口
 type Packet interface {
 	// Serialize 序列化

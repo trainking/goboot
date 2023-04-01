@@ -27,6 +27,7 @@ require (
 	go.mongodb.org/mongo-driver v1.10.3
 	go.uber.org/zap v1.23.0
 	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29
+	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 	google.golang.org/grpc v1.46.2
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect

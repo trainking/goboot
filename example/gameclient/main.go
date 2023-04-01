@@ -17,7 +17,7 @@ func main() {
 	}
 	defer c.Close()
 
-	cc := client.NewClient(c, 1024, 1024)
+	cc := client.NewClient(c, 1024, 1024, 3*time.Second)
 
 	go func() {
 		for p := range cc.Receive() {

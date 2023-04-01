@@ -1,7 +1,7 @@
 # 传输层协议，tcp, kcp
 Network: "kcp"
-# 每个连接的读超时，秒为单位
-ConnReadTimeout: 5
+# 每个连接的读超时(等于客户端心跳的超时)，秒为单位
+ConnReadTimeout: 10
 # 每个连接的写超时，秒为单位
 ConnWriteTimeout: 5
 # 连接成功后，多久未验证身份，则断开，秒为单位
@@ -10,6 +10,8 @@ ValidTimeout: 10
 SendLimit: 1024
 # 最大接收消息包大小
 ReceiveLimit: 1024
+# 心跳包限制数量, 每分钟不能超过的数量
+HeartLimit: 100
 
 # 日志配置
 Logger:
