@@ -11,6 +11,7 @@ import (
 	"github.com/trainking/goboot/pkg/log"
 	"github.com/trainking/goboot/pkg/utils"
 	"github.com/xtaci/kcp-go"
+	"google.golang.org/protobuf/proto"
 )
 
 type (
@@ -33,6 +34,8 @@ type (
 		totalConn int64 // 连接数量
 
 		modules []Moddule // 服务上的模块
+
+		sessions map[int64]*Session // 有效Session映射
 	}
 
 	// Middleware 中间件处理
@@ -72,6 +75,7 @@ func New(configPath string, addr string, instancdID int64) *App {
 	app.IntanceID = instancdID
 	app.router = make(map[uint16]Handler)
 	app.exitChan = make(chan struct{})
+	app.sessions = make(map[int64]*Session)
 	return app
 }
 
@@ -103,6 +107,22 @@ func (a *App) AddModule(module Moddule) {
 // GetTotalConn 获取连接总数
 func (a *App) GetTotalConn() int64 {
 	return atomic.LoadInt64(&a.totalConn)
+}
+
+// SendActor 向指定玩家发送消息
+func (a *App) SendActor(userID int64, opcode uint16, msg proto.Message) error {
+	p, err := CretaePbPacket(opcode, msg)
+	if err != nil {
+		return err
+	}
+
+	// 如果在本实例，则直接发送
+	if session, ok := a.sessions[userID]; ok {
+		return session.WritePacket(p)
+	}
+
+	// TODO：发送给其他实例
+	return nil
 }
 
 // Init 初始化服务
@@ -224,7 +244,7 @@ func (a *App) OnMessage(session *Session, p Packet) bool {
 	// 消息的分发
 	if h, ok := a.router[p.OpCode()]; ok {
 		go func() {
-			if err := h(NewDefaultContext(context.Background(), p.Body(), session)); err != nil {
+			if err := h(NewDefaultContext(context.Background(), a, session, p.Body())); err != nil {
 				log.Errorf("Handler %d Error: %s ", p.OpCode(), err)
 			}
 		}()

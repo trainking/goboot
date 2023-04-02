@@ -22,21 +22,30 @@ type (
 
 		// Send 发送消息到玩家
 		Send(opcode uint16, msg proto.Message) error
+
+		// SendActor 向其他玩家发送消息
+		SendActor(userID int64, opcode uint16, msg proto.Message) error
+
+		// Valid 验证玩家成功，传入用户ID
+		Valid(userID int64)
 	}
 
 	// DefaultContext 默认Context实现
 	DefaultContext struct {
+		a       *App
+		session *Session
 		ctx     context.Context
 		body    []byte
-		session *Session
 	}
 )
 
-func NewDefaultContext(ctx context.Context, body []byte, session *Session) Context {
+// NewDefaultContext
+func NewDefaultContext(ctx context.Context, a *App, session *Session, body []byte) Context {
 	return &DefaultContext{
+		a:       a,
+		session: session,
 		ctx:     ctx,
 		body:    body,
-		session: session,
 	}
 }
 
@@ -60,4 +69,16 @@ func (c *DefaultContext) Send(opcode uint16, msg proto.Message) error {
 	}
 
 	return c.session.WritePacket(p)
+}
+
+// SendActor 向指定玩家发送消息
+func (c *DefaultContext) SendActor(userID int64, opcode uint16, msg proto.Message) error {
+	return c.a.SendActor(userID, opcode, msg)
+}
+
+// Valid 验证成功
+func (c *DefaultContext) Valid(userID int64) {
+	c.a.sessions[userID] = c.session
+	c.session.valid()
+	c.session.SetUserID(userID)
 }
