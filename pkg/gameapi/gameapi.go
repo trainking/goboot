@@ -2,10 +2,12 @@ package gameapi
 
 import (
 	"context"
+	"encoding/json"
 	"net"
 	"sync"
 	"sync/atomic"
 
+	"github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
 	"github.com/trainking/goboot/pkg/boot"
 	"github.com/trainking/goboot/pkg/log"
@@ -14,17 +16,23 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+const (
+	// 向NATS中push推送给其他玩家消息的键
+	NatsPushUserK = "GAME_PUSH_USER"
+)
+
 type (
 	// App 游戏服务器实现
 	App struct {
 		boot.BaseInstance
 
+		nc        *nats.Conn
 		listener  net.Listener   // 网络监听
 		exitChan  chan struct{}  // 退出信号
 		waitGroup sync.WaitGroup // 等待携程控制
 		closeOnce sync.Once      // 保证关闭只执行一次
 
-		connectListener    Listener       // 会话建立时的连接监听器
+		connectListener    Listener       // 会话建立时的连接监听
 		disconnectListener Listener       // 会话断开时的连接监听器
 		beforeMiddleware   Middleware     // 会话处理消息之前执行的监听器
 		creator            SessionCreator // 会话创建时，预处理的生成器
@@ -35,7 +43,8 @@ type (
 
 		modules []Moddule // 服务上的模块
 
-		sessions map[int64]*Session // 有效Session映射
+		sessions  map[int64]*Session // 有效Session映射
+		sessionMu sync.RWMutex
 	}
 
 	// Middleware 中间件处理
@@ -59,6 +68,13 @@ type (
 
 	// SessionCreator session创建生成器，做一些预处理
 	SessionCreator func(net.Conn, *App) *Session
+
+	// PushActorMessage 发送消息给远程玩家
+	PushActorMessage struct {
+		UserID int64  `json:"user_id"`
+		OpCode uint16 `json:"opcode"`
+		Msg    []byte `json:"msg"`
+	}
 )
 
 // New 创建一个游戏服务器接口实例
@@ -69,7 +85,13 @@ func New(configPath string, addr string, instancdID int64) *App {
 		panic(err)
 	}
 
+	nc, err := nats.Connect(v.GetString("NatsUrl"))
+	if err != nil {
+		panic(err)
+	}
+
 	app := new(App)
+	app.nc = nc
 	app.Config = v
 	app.Addr = addr
 	app.IntanceID = instancdID
@@ -104,6 +126,13 @@ func (a *App) AddModule(module Moddule) {
 	a.modules = append(a.modules, module)
 }
 
+// AddSession 加入Session
+func (a *App) AddSession(userID int64, session *Session) {
+	a.sessionMu.Lock()
+	defer a.sessionMu.Unlock()
+	a.sessions[userID] = session
+}
+
 // GetTotalConn 获取连接总数
 func (a *App) GetTotalConn() int64 {
 	return atomic.LoadInt64(&a.totalConn)
@@ -117,12 +146,71 @@ func (a *App) SendActor(userID int64, opcode uint16, msg proto.Message) error {
 	}
 
 	// 如果在本实例，则直接发送
+	err = a.sendActorLocation(userID, p)
+	if err == ErrUserNoIn {
+		// 发送给其他实例
+		return a.sendActorPush(userID, p)
+	}
+
+	return err
+}
+
+// sendActorLocation 发送消息给本地实例
+func (a *App) sendActorLocation(userID int64, p Packet) error {
+	a.sessionMu.RLock()
+	defer a.sessionMu.RUnlock()
 	if session, ok := a.sessions[userID]; ok {
 		return session.WritePacket(p)
 	}
 
-	// TODO：发送给其他实例
-	return nil
+	return ErrUserNoIn
+}
+
+// sendActorPush 发送消息给远程实例
+func (a *App) sendActorPush(userID int64, p Packet) error {
+	pushMsg := PushActorMessage{
+		UserID: userID,
+		OpCode: p.OpCode(),
+		Msg:    p.Body(),
+	}
+
+	b, err := json.Marshal(pushMsg)
+	if err != nil {
+		return err
+	}
+
+	return a.nc.Publish(NatsPushUserK, b)
+}
+
+func (a *App) subscribePushUserMsg() {
+	var subChan = make(chan *nats.Msg)
+	sub, err := a.nc.ChanSubscribe(NatsPushUserK, subChan)
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		sub.Unsubscribe()
+		a.Stop()
+	}()
+
+	for {
+		select {
+		case <-a.exitChan:
+			return
+		case m := <-subChan:
+			var msg PushActorMessage
+			if err := json.Unmarshal(m.Data, &msg); err != nil {
+				log.Errorf("PushActorMessage Unmarshal Error: %v", err)
+				return
+			}
+
+			p := NewDefaultPacket(msg.Msg, msg.OpCode)
+			if err := a.sendActorLocation(msg.UserID, p); err != nil && err != ErrUserNoIn {
+				log.Errorf("PushActorMessage sendActorLocation Error: %v", err)
+				return
+			}
+		}
+	}
 }
 
 // Init 初始化服务
@@ -171,6 +259,9 @@ func (a *App) Init() (err error) {
 	default:
 		return errors.Wrap(ErrNoImplementNetwork, network)
 	}
+
+	// 监听广播的其他实例消息
+	go a.subscribePushUserMsg()
 
 	return nil
 }

@@ -12,6 +12,8 @@ SendLimit: 1024
 ReceiveLimit: 1024
 # 心跳包限制数量, 每分钟不能超过的数量
 HeartLimit: 100
+# NATS的地址
+NatsUrl: "nats://192.168.1.14:4222"
 
 # 日志配置
 Logger:

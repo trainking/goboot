@@ -78,7 +78,7 @@ func (c *DefaultContext) SendActor(userID int64, opcode uint16, msg proto.Messag
 
 // Valid 验证成功
 func (c *DefaultContext) Valid(userID int64) {
-	c.a.sessions[userID] = c.session
+	c.a.AddSession(userID, c.session)
 	c.session.valid()
 	c.session.SetUserID(userID)
 }
