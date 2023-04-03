@@ -9,7 +9,7 @@
       - [2.2.2 应用协议](#222-应用协议)
     - [2.3 Module](#23-module)
     - [2.4 Handler](#24-handler)
-  - [5. 注意事项](#5-注意事项)
+  - [3. 注意事项](#3-注意事项)
 
 
 ## 1. 概述
@@ -152,6 +152,6 @@ func (m *GateWayM) C2S_SayHandler(c gameapi.Context) error {
 }
 ```
 
-## 5. 注意事项
+## 3. 注意事项
 
 > 使用`gameapi`开发游戏服务器时，opcode为0已经被心跳包占用
