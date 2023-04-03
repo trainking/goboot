@@ -19,7 +19,7 @@ var (
 func main() {
 	flag.Parse()
 
-	instance := gameapi.New(*configPath, *addr, *instanceId)
+	instance := gameapi.New(*name, *configPath, *addr, *instanceId)
 
 	switch *name {
 	case "Gateway":

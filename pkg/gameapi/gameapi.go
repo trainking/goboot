@@ -82,7 +82,7 @@ type (
 )
 
 // New 创建一个游戏服务器接口实例
-func New(configPath string, addr string, instancdID int64) *App {
+func New(name string, configPath string, addr string, instancdID int64) *App {
 	// 加载配置
 	v, err := utils.LoadConfigFileViper(configPath)
 	if err != nil {
