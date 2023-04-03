@@ -14,6 +14,11 @@ ReceiveLimit: 1024
 HeartLimit: 100
 # NATS的地址
 NatsUrl: "nats://192.168.1.14:4222"
+# 服务注册的前缀
+Prefix: "/gameserver"
+# 服务注册的Etcd地址
+Etcd:
+  - "192.168.1.9:2379"
 
 # 日志配置
 Logger:

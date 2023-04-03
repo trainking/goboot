@@ -42,6 +42,9 @@ func (s *BaseService) Init() error {
 		return err
 	}
 
+	// 注册的元数据
+	var metadate *etcdx.MetaData
+
 	// 验证选项
 	switch s.Config.GetString(serviceConfigKey("Authentication.Mode", s.Name)) {
 	case "TLS":
@@ -50,11 +53,15 @@ func (s *BaseService) Init() error {
 			return err
 		}
 		s.GrpcServer = grpc.NewServer(grpc.Creds(creds))
+		metadate = &etcdx.MetaData{
+			Network: "https",
+		}
 	default:
 		s.GrpcServer = grpc.NewServer()
+		metadate = etcdx.DefaultMetaData
 	}
 
-	err = s.serviceManager.Register(s.Addr)
+	err = s.serviceManager.Register(s.Addr, metadate)
 
 	return err
 }

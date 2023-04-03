@@ -22,10 +22,9 @@ type ServiceManager struct {
 	em      endpoints.Manager
 	xClient *ClientX
 
-	metadate *MetaData // 元数据
-	target   string    // 服务名
-	leaseTTL int64     // 租约的过期时间
-	heartT   int       // 心跳维持时间,单位秒
+	target   string // 服务名
+	leaseTTL int64  // 租约的过期时间
+	heartT   int    // 心跳维持时间,单位秒
 	ctx      context.Context
 	cancel   context.CancelFunc
 }
@@ -52,13 +51,8 @@ func NewServiceManager(xClient *ClientX, target string, leaseTTl int64, heartT i
 	}, nil
 }
 
-// SetMetaData 设置元数据
-func (s *ServiceManager) SetMetaData(m *MetaData) {
-	s.metadate = m
-}
-
 // Register 注册到节点
-func (s *ServiceManager) Register(addr string) error {
+func (s *ServiceManager) Register(addr string, metadate ...interface{}) error {
 	// 设置Context控制租约过期
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 
@@ -66,8 +60,8 @@ func (s *ServiceManager) Register(addr string) error {
 		Addr: addr,
 	}
 
-	if s.metadate != nil {
-		ep.Metadata = s.metadate
+	if len(metadate) > 0 {
+		ep.Metadata = metadate[0]
 	} else {
 		ep.Metadata = DefaultMetaData
 	}

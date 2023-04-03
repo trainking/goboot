@@ -3,6 +3,7 @@ package gameapi
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -10,6 +11,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
 	"github.com/trainking/goboot/pkg/boot"
+	"github.com/trainking/goboot/pkg/etcdx"
 	"github.com/trainking/goboot/pkg/log"
 	"github.com/trainking/goboot/pkg/utils"
 	"github.com/xtaci/kcp-go"
@@ -26,11 +28,13 @@ type (
 	App struct {
 		boot.BaseInstance
 
-		nc        *nats.Conn
-		listener  net.Listener   // 网络监听
-		exitChan  chan struct{}  // 退出信号
-		waitGroup sync.WaitGroup // 等待携程控制
-		closeOnce sync.Once      // 保证关闭只执行一次
+		name           string                // 实例名，用来区分不同的实例
+		nc             *nats.Conn            // NATS消息分发
+		listener       net.Listener          // 网络监听
+		exitChan       chan struct{}         // 退出信号
+		waitGroup      sync.WaitGroup        // 等待携程控制
+		closeOnce      sync.Once             // 保证关闭只执行一次
+		serviceManager *etcdx.ServiceManager // etcd注册管理器
 
 		connectListener    Listener       // 会话建立时的连接监听
 		disconnectListener Listener       // 会话断开时的连接监听器
@@ -182,37 +186,6 @@ func (a *App) sendActorPush(userID int64, p Packet) error {
 	return a.nc.Publish(NatsPushUserK, b)
 }
 
-func (a *App) subscribePushUserMsg() {
-	var subChan = make(chan *nats.Msg)
-	sub, err := a.nc.ChanSubscribe(NatsPushUserK, subChan)
-	if err != nil {
-		panic(err)
-	}
-	defer func() {
-		sub.Unsubscribe()
-		a.Stop()
-	}()
-
-	for {
-		select {
-		case <-a.exitChan:
-			return
-		case m := <-subChan:
-			var msg PushActorMessage
-			if err := json.Unmarshal(m.Data, &msg); err != nil {
-				log.Errorf("PushActorMessage Unmarshal Error: %v", err)
-				return
-			}
-
-			p := NewDefaultPacket(msg.Msg, msg.OpCode)
-			if err := a.sendActorLocation(msg.UserID, p); err != nil && err != ErrUserNoIn {
-				log.Errorf("PushActorMessage sendActorLocation Error: %v", err)
-				return
-			}
-		}
-	}
-}
-
 // Init 初始化服务
 func (a *App) Init() (err error) {
 	if err = a.BaseInstance.Init(); err != nil {
@@ -259,11 +232,61 @@ func (a *App) Init() (err error) {
 	default:
 		return errors.Wrap(ErrNoImplementNetwork, network)
 	}
-
 	// 监听广播的其他实例消息
 	go a.subscribePushUserMsg()
 
+	// 注册服务
+	a.registerEtcd()
+
 	return nil
+}
+
+// subscribePushUserMsg 订阅消费推送玩家的消息
+func (a *App) subscribePushUserMsg() {
+	var subChan = make(chan *nats.Msg)
+	sub, err := a.nc.ChanSubscribe(NatsPushUserK, subChan)
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		sub.Unsubscribe()
+		a.Stop()
+	}()
+
+	for {
+		select {
+		case <-a.exitChan:
+			return
+		case m := <-subChan:
+			var msg PushActorMessage
+			if err := json.Unmarshal(m.Data, &msg); err != nil {
+				log.Errorf("PushActorMessage Unmarshal Error: %v", err)
+				return
+			}
+
+			p := NewDefaultPacket(msg.Msg, msg.OpCode)
+			if err := a.sendActorLocation(msg.UserID, p); err != nil && err != ErrUserNoIn {
+				log.Errorf("PushActorMessage sendActorLocation Error: %v", err)
+				return
+			}
+		}
+	}
+}
+
+// registerEtcd 注册到Etcd中
+func (a *App) registerEtcd() error {
+	xClient, err := etcdx.New(a.Config.GetStringSlice("Etcd"))
+	if err != nil {
+		return err
+	}
+
+	a.serviceManager, err = etcdx.NewServiceManager(xClient, fmt.Sprintf("%s/%s", a.Config.GetString("Prefix"), a.name), 15, 10)
+	if err != nil {
+		return err
+	}
+
+	err = a.serviceManager.Register(a.Addr)
+	return err
 }
 
 // Start 启动服务
