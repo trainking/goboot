@@ -164,7 +164,9 @@ func (a *App) sendActorLocation(userID int64, p Packet) error {
 	a.sessionMu.RLock()
 	defer a.sessionMu.RUnlock()
 	if session, ok := a.sessions[userID]; ok {
-		return session.WritePacket(p)
+		if !session.IsClosed() {
+			return session.WritePacket(p)
+		}
 	}
 
 	return ErrUserNoIn
@@ -369,7 +371,7 @@ func (a *App) OnMessage(session *Session, p Packet) bool {
 	return true
 }
 
-// OnDisConnect 短线处理
+// OnDisConnect 断线处理
 func (a *App) OnDisConnect(sesssion *Session) {
 	atomic.AddInt64(&a.totalConn, -1)
 
