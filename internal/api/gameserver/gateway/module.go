@@ -18,6 +18,17 @@ type GateWayM struct {
 
 func (m *GateWayM) Init(a *gameapi.App) {
 
+	a.SetConnectListener(func(s *gameapi.Session) error {
+		log.Infof("ConnectNum: %d", a.GetTotalConn())
+		return nil
+	})
+
+	a.SetDisconnectListener(func(s *gameapi.Session) error {
+		log.Infof("ConnectNum: %d", a.GetTotalConn())
+		return nil
+	})
+
+	// 设置消息处理前中间件
 	a.SetBeforeMiddleware(func(s *gameapi.Session, p gameapi.Packet) error {
 		if p.OpCode() == uint16(pb.OpCode_Op_C2S_Login) {
 			return nil

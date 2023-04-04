@@ -337,14 +337,15 @@ func (a *App) Stop() {
 
 // OnConnect 连接时处理
 func (a *App) OnConnect(session *Session) bool {
+	atomic.AddInt64(&a.totalConn, 1)
+	session.startValidTimer()
+
 	if a.connectListener != nil {
 		if err := a.connectListener(session); err != nil {
 			return false
 		}
 	}
 
-	session.startValidTimer()
-	atomic.AddInt64(&a.totalConn, 1)
 	return true
 }
 
