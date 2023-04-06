@@ -14,7 +14,7 @@ func main() {
 
 	r1 := robot.New("kcp", "127.0.0.1:6001")
 	startRobot(r1, "1", "123456")
-	r2 := robot.New("kcp", "127.0.0.1:6002")
+	r2 := robot.New("kcp", "127.0.0.1:6001")
 	startRobot(r2, "2", "123456")
 
 	r2.Say(1, "2 say hello")
