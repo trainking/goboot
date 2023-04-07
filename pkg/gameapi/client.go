@@ -1,4 +1,4 @@
-package client
+package gameapi
 
 import (
 	"errors"
@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/trainking/goboot/pkg/gameapi"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+// Client 客户端实现，用于压测和机器人测试
 type Client struct {
 	Conn      net.Conn
 	closeConn chan struct{}
@@ -18,8 +18,8 @@ type Client struct {
 
 	running bool
 
-	receiveChan chan gameapi.Packet
-	sendChan    chan gameapi.Packet
+	receiveChan chan Packet
+	sendChan    chan Packet
 }
 
 // NewClient 新客户端
@@ -31,8 +31,8 @@ func NewClient(conn net.Conn, readLimit int, sendLimit int, heart time.Duration)
 	client := &Client{
 		Conn:        conn,
 		closeConn:   make(chan struct{}),
-		receiveChan: make(chan gameapi.Packet, readLimit),
-		sendChan:    make(chan gameapi.Packet, sendLimit),
+		receiveChan: make(chan Packet, readLimit),
+		sendChan:    make(chan Packet, sendLimit),
 		running:     true,
 	}
 
@@ -54,7 +54,7 @@ func (c *Client) asyncDo(fn func()) {
 
 // Ping 发送心跳
 func (c *Client) Ping() {
-	c.Conn.Write(gameapi.HeartPacket.Serialize())
+	c.Conn.Write(HeartPacket.Serialize())
 }
 
 // KeepAlive 保持心跳
@@ -87,12 +87,14 @@ func (c *Client) readLoop() {
 		default:
 		}
 
-		n, err := gameapi.Packing(c.Conn)
+		n, err := Packing(c.Conn)
 		if err != nil {
 			return
 		}
 
-		c.receiveChan <- n
+		if n.OpCode() > 0 {
+			c.receiveChan <- n
+		}
 	}
 }
 
@@ -117,7 +119,7 @@ func (c *Client) sendLoop() {
 
 // Send 发送消息
 func (c *Client) Send(opcode uint16, msg protoreflect.ProtoMessage) error {
-	p, err := gameapi.CretaePbPacket(opcode, msg)
+	p, err := CretaePbPacket(opcode, msg)
 	if err != nil {
 		return err
 	}
@@ -131,7 +133,7 @@ func (c *Client) Send(opcode uint16, msg protoreflect.ProtoMessage) error {
 }
 
 // Receive 读取消息
-func (c *Client) Receive() <-chan gameapi.Packet {
+func (c *Client) Receive() <-chan Packet {
 	return c.receiveChan
 }
 

@@ -1,8 +1,8 @@
 package gateway
 
 import (
-	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/trainking/goboot/internal/pb"
 	"github.com/trainking/goboot/pkg/gameapi"
@@ -18,8 +18,19 @@ type GateWayM struct {
 
 func (m *GateWayM) Init(a *gameapi.App) {
 
+	a.SetConnectListener(func(s *gameapi.Session) error {
+		log.Infof("ConnectNum: %d", a.GetTotalConn())
+		return nil
+	})
+
+	a.SetDisconnectListener(func(s *gameapi.Session) error {
+		log.Infof("ConnectNum: %d", a.GetTotalConn())
+		return nil
+	})
+
+	// 设置消息处理前中间件
 	a.SetBeforeMiddleware(func(s *gameapi.Session, p gameapi.Packet) error {
-		if p.OpCode() == uint16(pb.OpCode_Op_C2S_Ping) || p.OpCode() == uint16(pb.OpCode_Op_C2S_Login) {
+		if p.OpCode() == uint16(pb.OpCode_Op_C2S_Login) {
 			return nil
 		}
 
@@ -32,25 +43,9 @@ func (m *GateWayM) Init(a *gameapi.App) {
 
 func (m *GateWayM) Group() map[uint16]gameapi.Handler {
 	return map[uint16]gameapi.Handler{
-		uint16(pb.OpCode_Op_C2S_Ping):  m.C2S_PingHandler,
 		uint16(pb.OpCode_Op_C2S_Login): m.C2S_LoginHandler,
+		uint16(pb.OpCode_Op_C2S_Say):   m.C2S_SayHandler,
 	}
-}
-
-// C2S_PingHandler
-func (m *GateWayM) C2S_PingHandler(c gameapi.Context) error {
-	var msg pb.C2S_Ping
-	if err := c.Params(&msg); err != nil {
-		return err
-	}
-
-	log.Infof("Receive %v", msg.TickTime)
-	if err := c.Send(uint16(pb.OpCode_Op_S2C_Pong), &pb.S2C_Pong{
-		OK: true,
-	}); err != nil {
-		return err
-	}
-	return nil
 }
 
 // C2S_LoginHandler 登录
@@ -61,14 +56,27 @@ func (m *GateWayM) C2S_LoginHandler(c gameapi.Context) error {
 	}
 
 	log.Infof("Login: %s %s", msg.Account, msg.Password)
-	if msg.Account == "admin" && msg.Password == "123456" {
-		c.Session().Valid(1)
-		if err := c.Send(uint16(pb.OpCode_Op_S2C_Login), &pb.S2C_Login{Ok: true}); err != nil {
-			return err
-		}
-		return nil
+	var result = new(pb.S2C_Login)
+	if msg.Password == "123456" {
+		id, _ := strconv.ParseInt(msg.Account, 10, 64)
+		c.Valid(id)
+		result.Ok = true
+	} else {
+		result.Ok = false
 	}
 
-	c.Session().Close()
-	return errors.New("session is valid failed")
+	return c.Send(uint16(pb.OpCode_Op_S2C_Login), result)
+}
+
+func (m *GateWayM) C2S_SayHandler(c gameapi.Context) error {
+	var msg pb.C2S_Say
+	if err := c.Params(&msg); err != nil {
+		return err
+	}
+
+	log.Infof("Say %v", msg)
+
+	return c.SendActor(msg.Actor, uint16(pb.OpCode_Op_S2C_Say), &pb.S2C_Say{
+		Word: msg.Word,
+	})
 }

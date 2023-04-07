@@ -10,6 +10,7 @@ import (
 )
 
 var (
+	name       = flag.String("name", "Gateway", "game server name")
 	addr       = flag.String("addr", ":6001", "gameserver api lisen addr")
 	configPath = flag.String("config", "configs/gameserver.api.yml", "config file path")
 	instanceId = flag.Int64("instance", 1, "run instance id")
@@ -18,9 +19,12 @@ var (
 func main() {
 	flag.Parse()
 
-	instance := gameapi.New(*configPath, *addr, *instanceId)
+	instance := gameapi.New(*name, *configPath, *addr, *instanceId)
 
-	instance.AddModule(gateway.Module())
+	switch *name {
+	case "Gateway":
+		instance.AddModule(gateway.Module())
+	}
 
 	fmt.Println("game server start listen: ", *addr)
 	if err := boot.BootServe(instance); err != nil {

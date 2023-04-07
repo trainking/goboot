@@ -6,11 +6,11 @@ package pb;
 
 // OpCode 操作符定义
 enum OpCode {
-  None = 0;
-  Op_C2S_Ping = 1;
-  Op_S2C_Pong = 2;
-  Op_C2S_Login = 3;
-  Op_S2C_Login = 4;
+  None = 0;  // 心跳包占用
+  Op_C2S_Login = 1;
+  Op_S2C_Login = 2;
+  Op_C2S_Say = 3;
+  Op_S2C_Say = 4;
 }
 
 // C2S_Ping 客户端向服务器发送心跳
@@ -23,3 +23,12 @@ message C2S_Login {
   string Password = 2;
 }
 message S2C_Login { bool Ok = 1; }
+
+// C2S_Say 玩家通信
+message C2S_Say {
+  int64 Actor = 1;
+  string Word = 2;
+}
+message S2C_Say {
+  string Word = 1;
+}
