@@ -45,6 +45,7 @@ func (m *GateWayM) Group() map[uint16]gameapi.Handler {
 	return map[uint16]gameapi.Handler{
 		uint16(pb.OpCode_Op_C2S_Login): m.C2S_LoginHandler,
 		uint16(pb.OpCode_Op_C2S_Say):   m.C2S_SayHandler,
+		uint16(pb.OpCode_Op_S2S_Hi):    m.S2S_Hi,
 	}
 }
 
@@ -76,7 +77,22 @@ func (m *GateWayM) C2S_SayHandler(c gameapi.Context) error {
 
 	log.Infof("Say %v", msg)
 
+	c.SendActor(msg.Actor, uint16(pb.OpCode_Op_S2S_Hi), &pb.S2S_Hi{
+		Repeat: "repeat: " + msg.Word,
+	})
+
 	return c.SendActor(msg.Actor, uint16(pb.OpCode_Op_S2C_Say), &pb.S2C_Say{
 		Word: msg.Word,
 	})
+}
+
+func (m *GateWayM) S2S_Hi(c gameapi.Context) error {
+	var msg pb.S2S_Hi
+	if err := c.Params(&msg); err != nil {
+		return err
+	}
+
+	log.Infof("Hi:%v", msg)
+
+	return nil
 }

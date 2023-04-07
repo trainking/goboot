@@ -11,6 +11,7 @@ enum OpCode {
   Op_S2C_Login = 2;
   Op_C2S_Say = 3;
   Op_S2C_Say = 4;
+  Op_S2S_Hi = 5;
 }
 
 // C2S_Ping 客户端向服务器发送心跳
@@ -31,4 +32,9 @@ message C2S_Say {
 }
 message S2C_Say {
   string Word = 1;
+}
+
+// S2S_Hi 服务端玩家通信
+message S2S_Hi {
+  string Repeat = 1;
 }

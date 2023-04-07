@@ -165,6 +165,11 @@ func (a *App) sendActorLocation(userID int64, p Packet) error {
 	defer a.sessionMu.RUnlock()
 	if session, ok := a.sessions[userID]; ok {
 		if !session.IsClosed() {
+			// 如果定义handler，必须发送给handler处理
+			if _, ok := a.router[p.OpCode()]; ok {
+				session.receiveChan <- p
+				return nil
+			}
 			return session.WritePacket(p)
 		}
 	}
