@@ -104,3 +104,4 @@ Logger:
 * [Game Server: 游戏服](./docs/guide/gameserver.md)
 * [HTTP API: http开发Api接口](./docs/guide/httpapi.md)
 * [Service: gRPC微服务](./docs/guide/service.md)
+* [bootctl：命令行工具](./docs/guide/bootctl.md)
