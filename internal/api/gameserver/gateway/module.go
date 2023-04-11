@@ -17,7 +17,7 @@ type GateWayM struct {
 }
 
 func (m *GateWayM) Init(a *gameapi.App) {
-
+	log.Info("Module init")
 	a.SetConnectListener(func(s *gameapi.Session) error {
 		log.Infof("ConnectNum: %d", a.GetTotalConn())
 		return nil

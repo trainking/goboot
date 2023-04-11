@@ -39,16 +39,14 @@ func (b *BaseInstance) Init() error {
 	// 初始化日志
 	loggerConf := b.Config.GetStringMap("Logger")
 
-	if loggerConf != nil {
+	if len(loggerConf) > 0 {
 		config := log.NewConfigByMap(loggerConf)
 		config.ID = strconv.FormatInt(b.IntanceID, 10)
 		log.InitLogger(config)
 	} else {
 		log.InitLogger(log.Config{
-			Level:   "debug",
-			Target:  b.Name,
-			ID:      strconv.FormatInt(b.IntanceID, 10),
-			OutPath: "./logs",
+			Target: b.Name,
+			ID:     strconv.FormatInt(b.IntanceID, 10),
 		})
 	}
 
