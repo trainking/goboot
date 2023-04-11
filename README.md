@@ -84,11 +84,11 @@ Moddule interface {
 **goboot**希望开发能够遵循一些管理来实现，这样可以大部分减少描述的篇幅，**遵循惯例，也方便多人开发的协作**。因此，推崇一下惯例：
 
 1. 所有**实例**的配置文件都放在根目录下的`configs`目录
-2. 所有**实例**的配置文件中，必须包含一份日志配置
+2. 所有**实例**的配置文件中，设定日志配置条件
 ```yaml
 # 日志配置
 Logger:
-  # 日志输出级别，debug->wrong->error
+  # 日志输出级别，debug->info->warn->error
   Level: "debug"
   # 日志文件的输出分类，文件名是 {target}_{instanceId}.log
   Target: "gameserver.api"

@@ -57,7 +57,7 @@ type (
 )
 
 // New creates a new application.
-func New(configPath string, addr string, instancdID int64) *App {
+func New(name string, configPath string, addr string, instancdID int64) *App {
 	// 加载配置
 	v, err := utils.LoadConfigFileViper(configPath)
 	if err != nil {
@@ -65,6 +65,7 @@ func New(configPath string, addr string, instancdID int64) *App {
 	}
 
 	app := new(App)
+	app.Name = name
 	app.e = echo.New()
 	app.validator = NewStructValidator()
 	app.Config = v

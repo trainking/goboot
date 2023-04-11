@@ -28,7 +28,6 @@ type (
 	App struct {
 		boot.BaseInstance
 
-		name           string                // 实例名，用来区分不同的实例
 		nc             *nats.Conn            // NATS消息分发
 		listener       net.Listener          // 网络监听
 		exitChan       chan struct{}         // 退出信号
@@ -95,6 +94,7 @@ func New(name string, configPath string, addr string, instancdID int64) *App {
 	}
 
 	app := new(App)
+	app.Name = name
 	app.nc = nc
 	app.Config = v
 	app.Addr = addr
@@ -287,7 +287,7 @@ func (a *App) registerEtcd() error {
 		return err
 	}
 
-	a.serviceManager, err = etcdx.NewServiceManager(xClient, fmt.Sprintf("%s/%s", a.Config.GetString("Prefix"), a.name), 15, 10)
+	a.serviceManager, err = etcdx.NewServiceManager(xClient, fmt.Sprintf("%s/%s", a.Config.GetString("Prefix"), a.Name), 15, 10)
 	if err != nil {
 		return err
 	}

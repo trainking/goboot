@@ -27,6 +27,7 @@ type (
 
 	// BaseInstance 基础实例结构
 	BaseInstance struct {
+		Name      string // 实例名
 		Config    *viper.Viper
 		Addr      string // 监听地址
 		IntanceID int64  // 实例ID
@@ -37,9 +38,19 @@ type (
 func (b *BaseInstance) Init() error {
 	// 初始化日志
 	loggerConf := b.Config.GetStringMap("Logger")
-	config := log.NewConfigByMap(loggerConf)
-	config.ID = strconv.FormatInt(b.IntanceID, 10)
-	log.InitLogger(config)
+
+	if loggerConf != nil {
+		config := log.NewConfigByMap(loggerConf)
+		config.ID = strconv.FormatInt(b.IntanceID, 10)
+		log.InitLogger(config)
+	} else {
+		log.InitLogger(log.Config{
+			Level:   "debug",
+			Target:  b.Name,
+			ID:      strconv.FormatInt(b.IntanceID, 10),
+			OutPath: "./logs",
+		})
+	}
 
 	// 初始化ID生成器
 	idgen.InitNode(b.IntanceID)
