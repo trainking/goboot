@@ -21,10 +21,7 @@ func main() {
 
 	instance := gameapi.New(*name, *configPath, *addr, *instanceId)
 
-	switch *name {
-	case "Gateway":
-		instance.AddModule(gateway.Module())
-	}
+	instance.AddModule(gateway.Module())
 
 	fmt.Println("game server start listen: ", *addr)
 	if err := boot.BootServe(instance); err != nil {

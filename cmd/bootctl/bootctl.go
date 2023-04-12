@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/trainking/goboot/cmd/bootctl/internal/gameapi"
 	"github.com/trainking/goboot/cmd/bootctl/internal/httpapi"
 	"github.com/trainking/goboot/cmd/bootctl/internal/initcmd"
 	"github.com/urfave/cli/v2"
@@ -16,6 +17,7 @@ func main() {
 		Commands: []*cli.Command{
 			initcmd.CMD(),
 			httpapi.CMD(),
+			gameapi.CMD(),
 		},
 	}
 
