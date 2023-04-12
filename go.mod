@@ -21,6 +21,7 @@ require (
 	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b // indirect
 	github.com/tjfoc/gmsm v1.4.1 // indirect
 	github.com/urfave/cli/v2 v2.25.1
+	github.com/valyala/fasttemplate v1.2.1
 	github.com/wagslane/go-rabbitmq v0.10.0
 	github.com/xtaci/kcp-go v5.4.20+incompatible
 	github.com/xtaci/lossyconn v0.0.0-20200209145036-adba10fffc37 // indirect
