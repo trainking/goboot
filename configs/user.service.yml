@@ -1,7 +1,3 @@
-Logger:
-  Level: "debug"
-  Target: "user.service"
-  Outpath: "./logs"
 
 UserService:
   Prefix: "/services"

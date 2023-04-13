@@ -13,15 +13,9 @@ ReceiveLimit: 1024
 # 心跳包限制数量, 每分钟不能超过的数量
 HeartLimit: 100
 # NATS的地址
-NatsUrl: "nats://192.168.1.9:4222"
+NatsUrl: "nats://192.168.1.14:4222"
 # 服务注册的前缀
 Prefix: "/gameserver"
 # 服务注册的Etcd地址
 Etcd:
-  - "192.168.1.9:2379"
-
-# 日志配置
-Logger:
-  Level: "debug"
-  Target: "gameserver.api"
-  Outpath: "./logs"
+  - "192.168.1.14:2379"

@@ -1,7 +1,3 @@
-Logger:
-  Level: "debug"
-  Target: "helloworld.api"
-  Outpath: "./logs"
 UserService:
   Prefix: "/services"
   Authentication:

@@ -3,7 +3,6 @@ module github.com/trainking/goboot
 go 1.16
 
 require (
-	github.com/BurntSushi/toml v1.2.0 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.18.7
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.17.9
 	github.com/bwmarrin/snowflake v0.3.0
@@ -21,6 +20,8 @@ require (
 	github.com/templexxx/cpufeat v0.0.0-20180724012125-cef66df7f161 // indirect
 	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b // indirect
 	github.com/tjfoc/gmsm v1.4.1 // indirect
+	github.com/urfave/cli/v2 v2.25.1
+	github.com/valyala/fasttemplate v1.2.1
 	github.com/wagslane/go-rabbitmq v0.10.0
 	github.com/xtaci/kcp-go v5.4.20+incompatible
 	github.com/xtaci/lossyconn v0.0.0-20200209145036-adba10fffc37 // indirect
@@ -33,4 +34,5 @@ require (
 	google.golang.org/grpc v1.46.2
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1
 )

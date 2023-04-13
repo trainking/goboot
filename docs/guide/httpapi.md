@@ -1,15 +1,15 @@
 # HTTP API
 
 - [HTTP API](#http-api)
-  - [1. 概述](#1-概述)
-  - [2. 详细设计](#2-详细设计)
-    - [2.1 Instance](#21-instance)
-      - [2.1.1 配置文件](#211-配置文件)
-    - [2.2 Module](#22-module)
-      - [2.2.1 Group](#221-group)
-      - [2.2.2 Router](#222-router)
-    - [2.3 Handler](#23-handler)
-  - [3. 注意事项](#3-注意事项)
+	- [1. 概述](#1-概述)
+	- [2. 详细设计](#2-详细设计)
+		- [2.1 Instance](#21-instance)
+			- [2.1.1 配置文件](#211-配置文件)
+		- [2.2 Module](#22-module)
+			- [2.2.1 Group](#221-group)
+			- [2.2.2 Router](#222-router)
+		- [2.3 Handler](#23-handler)
+	- [3. 注意事项](#3-注意事项)
 
 
 ## 1. 概述
@@ -25,6 +25,7 @@
 
 | 参数       | Options               | 类型   | 说明                              |
 | :--------- | :-------------------- | :----- | :-------------------------------- |
+| name       | -name,--name          | string | 名称                              |
 | addr       | -addr, --addr         | string | 监听的ip:port，如`127.0.0.1:6001` |
 | configPath | -config, --config     | string | 配置文件的路径                    |
 | instanceId | -instance, --instance | int64  | 实例的ID，实例的唯一标识          |

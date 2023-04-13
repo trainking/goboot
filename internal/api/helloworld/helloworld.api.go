@@ -11,6 +11,7 @@ import (
 )
 
 var (
+	name       = flag.String("name", "helloworld", "http api server name")
 	addr       = flag.String("addr", ":8001", "helloworld service listen address")
 	configPath = flag.String("config", "configs/helloworld.api.yml", "config file path")
 	instanceId = flag.Int64("instance", 1, "run instance id")
@@ -19,7 +20,7 @@ var (
 func main() {
 	flag.Parse()
 
-	instance := httpapi.New(*configPath, *addr, *instanceId)
+	instance := httpapi.New(*name, *configPath, *addr, *instanceId)
 	// 中间件
 	instance.Use(middleware.RequestID())
 	// 模块
