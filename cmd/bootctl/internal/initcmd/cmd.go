@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/trainking/goboot/cmd/bootctl/conf"
 	"github.com/urfave/cli/v2"
 )
 
@@ -22,6 +23,13 @@ var CMD = func() *cli.Command {
 
 			if name == "" {
 				return errors.New("must a name")
+			}
+
+			// 创建bootrc配置文件
+			if err := conf.WriteConf(conf.Conf{
+				ModName: name,
+			}); err != nil {
+				return err
 			}
 
 			// 创建基础目录
