@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/trainking/goboot/internal/api/helloworld/user"
 	"github.com/trainking/goboot/pkg/boot"
 	"github.com/trainking/goboot/pkg/httpapi"
@@ -22,7 +21,7 @@ func main() {
 
 	instance := httpapi.New(*name, *configPath, *addr, *instanceId)
 	// 中间件
-	instance.Use(middleware.RequestID())
+
 	// 模块
 	instance.AddModule(user.Module())
 
