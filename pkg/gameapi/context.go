@@ -3,7 +3,7 @@ package gameapi
 import (
 	"context"
 
-	"github.com/pborman/uuid"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
