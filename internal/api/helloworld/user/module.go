@@ -8,7 +8,7 @@ import (
 	"github.com/trainking/goboot/internal/pb"
 	"github.com/trainking/goboot/pkg/httpapi"
 	"github.com/trainking/goboot/pkg/log"
-	"google.golang.org/grpc/metadata"
+	"github.com/trainking/goboot/pkg/service"
 
 	userClient "github.com/trainking/goboot/internal/service/user/client"
 )
@@ -53,9 +53,7 @@ func (m *M) Group() httpapi.Group {
 func (m *M) GetUserInfo(c echo.Context) error {
 	requestID := httpapi.GetRequestID(c)
 	log.Trace(requestID, "GetUserInfo", "start", "start GetUserInfo")
-	ctx := c.Request().Context()
-	// ctx = context.WithValue(ctx, "RequestID", requestID)
-	ctx = metadata.AppendToOutgoingContext(ctx, echo.HeaderXRequestID, requestID)
+	ctx := service.WithRequestIDContext(c.Request().Context(), requestID)
 	reply, err := m.UserService.GetUserInfo(ctx, &pb.GetUserInfoArgs{
 		UserId: 1,
 	})

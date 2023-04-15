@@ -44,13 +44,14 @@ import (
 	"{{project}}/internal/pb"
 	"github.com/trainking/goboot/pkg/boot"
 	"github.com/trainking/goboot/pkg/log"
+	"github.com/trainking/goboot/pkg/service"
 	"github.com/trainking/goboot/pkg/utils"
 )
 
 type (
 	Server struct {
 		pb.Unimplemented{{Name}}ServiceServer
-		boot.BaseService
+		service.BaseService
 	}
 )
 
@@ -87,12 +88,12 @@ var clientText = `package client
 import (
 	"github.com/spf13/viper"
 	"{{project}}/internal/pb"
-	"github.com/trainking/goboot/pkg/boot"
+	"github.com/trainking/goboot/pkg/service"
 )
 
 // New{{Name}}Service 创建{{Name}}Servcie客户端
 func New{{Name}}Service(serviceName string, config *viper.Viper) (pb.{{Name}}ServiceClient, error) {
-	conn, err := boot.NewGrpcClientConn(serviceName, config)
+	conn, err := service.NewGrpcClientConn(serviceName, config)
 	if err != nil {
 		return nil, err
 	}

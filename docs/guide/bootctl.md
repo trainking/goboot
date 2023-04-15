@@ -53,14 +53,21 @@
 > bootctl init --name=gateway
 ```
 
-| 参数    | 类型   | 参考                  | 是否必须 | 说明                        |
-| :------ | :----- | :-------------------- | :------- | :-------------------------- |
-| name    | string | auther                | 是       | 服务名                      |
-| addr    | stirng | 127.0.0.1:8080        | 否       | 默认监听的地址和端口        |
-| id      | int    | 1                     | 否       | 默认的实例id                |
-| network | string | kcp                   | 否       | 传输协议，tcp或kcp，默认kcp |
-| nats    | string | nats://127.0.0.1:4222 | 否       | nats地址                    |
-| etcd    | stirng | 127.0.0.1:2379        | 否       | etcd地址，集群用`,`分割     |
+| 参数    | 类型   | 参考                  | 是否必须 | 说明                                                                     |
+| :------ | :----- | :-------------------- | :------- | :----------------------------------------------------------------------- |
+| name    | string | auther                | 是       | 服务名                                                                   |
+| option  | string | c                     | 否       | 操作符，默认是c; c 创建；g 生成proto，会根据编辑的game.proto生成op.proto |
+| addr    | stirng | 127.0.0.1:8080        | 否       | 默认监听的地址和端口                                                     |
+| id      | int    | 1                     | 否       | 默认的实例id                                                             |
+| network | string | kcp                   | 否       | 传输协议，tcp或kcp，默认kcp                                              |
+| nats    | string | nats://127.0.0.1:4222 | 否       | nats地址                                                                 |
+| etcd    | stirng | 127.0.0.1:2379        | 否       | etcd地址，集群用`,`分割                                                  |
+
+编辑xxx.game.proto后，生成xxx.op.proto:
+
+```
+bootctl init --name=gateway --option=g
+```
 
 ### boot service：创建一个service
 

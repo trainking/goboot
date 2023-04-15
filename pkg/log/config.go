@@ -45,7 +45,7 @@ func (c *Config) Set(k string, v interface{}) {
 }
 
 // LogPath 日志文件路径
-func (c *Config) LogPath() string {
+func (c *Config) LogPath(level string) string {
 	// 替换掉可能导致路径问题的字符
 	rep := strings.NewReplacer(
 		`\`, "",
@@ -58,15 +58,20 @@ func (c *Config) LogPath() string {
 		">", "_",
 		"|", "_",
 	)
-	return filepath.Join(c.OutPath, rep.Replace(c.Target), rep.Replace(c.ServiceID()+".log"))
+	return filepath.Join(c.OutPath, rep.Replace(c.Target), rep.Replace(c.filename(level)))
 }
 
 // ServiceID 服务ID, 使用Target+ID生成
+func (c *Config) filename(level string) string {
+	return fmt.Sprintf("%s.%s.log", c.ServiceID(), level)
+}
+
 func (c *Config) ServiceID() string {
 	if c.ID == "" {
 		return c.Target
 	}
-	return fmt.Sprintf("%s_%s", c.Target, c.ID)
+
+	return fmt.Sprintf("%s.%s", c.Target, c.ID)
 }
 
 func (c *Config) defaultChange() {

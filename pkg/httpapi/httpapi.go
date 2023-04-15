@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"github.com/google/uuid"
 	"github.com/trainking/goboot/pkg/boot"
 	"github.com/trainking/goboot/pkg/log"
 	"github.com/trainking/goboot/pkg/utils"
@@ -133,11 +134,18 @@ func (a *App) Start() error {
 		Skipper:          middleware.DefaultSkipper,
 		Format:           `{"level": "ACCESS", "ts":"${time_rfc3339}", "id": "${id}", "remote_ip":"${remote_ip}", "host":"${host}","method":"${method}","uri":"${uri}","user_agent":"${user_agent}", "status":${status},"latency_human":"${latency_human}"}` + "\n",
 		CustomTimeFormat: "2006-01-02T15:04:05.000Z",
-		Output:           log.GetWriter(),
+		Output:           log.GetAccessWriter(),
 	}))
 	a.e.Use(middleware.Recover())
 	a.e.Use(middleware.CORS())
 	a.e.Use(middleware.Gzip())
+	// 使用UUID作为请求ID
+	a.e.Use(middleware.RequestIDWithConfig(middleware.RequestIDConfig{
+		Generator: func() string {
+			id := uuid.New()
+			return id.String()
+		},
+	}))
 
 	return a.e.Start(a.Addr)
 }

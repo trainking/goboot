@@ -81,9 +81,9 @@ func (l *Logger) Tracef(requestID string, tag string, event string, format strin
 // 未实现按日分文件
 // 使用LocalTime作为分文件的时间点
 // 旧文件格式 /var/log/foo/server-2016-11-04T18-30-00.000.log
-func New(c Config) *Logger {
+func New(c Config, level string) *Logger {
 	c.defaultChange()
-	fn := c.LogPath()
+	fn := c.LogPath(level)
 	writeSyncer := getLogWriter(fn, c.MaxSize)
 
 	encoder := getEncoder()

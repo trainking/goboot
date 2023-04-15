@@ -3,6 +3,7 @@ package gameapi
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -28,24 +29,30 @@ type (
 
 		// Valid 验证玩家成功，传入用户ID
 		Valid(userID int64)
+
+		// GetRequestID 获得请求ID
+		GetRequestID() string
 	}
 
 	// DefaultContext 默认Context实现
 	DefaultContext struct {
-		a       *App
-		session *Session
-		ctx     context.Context
-		body    []byte
+		a         *App
+		session   *Session
+		ctx       context.Context
+		body      []byte
+		requestID string
 	}
 )
 
 // NewDefaultContext
 func NewDefaultContext(ctx context.Context, a *App, session *Session, body []byte) Context {
+	id := uuid.New()
 	return &DefaultContext{
-		a:       a,
-		session: session,
-		ctx:     ctx,
-		body:    body,
+		a:         a,
+		session:   session,
+		ctx:       ctx,
+		body:      body,
+		requestID: id.String(),
 	}
 }
 
@@ -81,4 +88,14 @@ func (c *DefaultContext) Valid(userID int64) {
 	c.a.AddSession(userID, c.session)
 	c.session.valid()
 	c.session.SetUserID(userID)
+}
+
+// GetRequestID 获得请求ID
+func (c *DefaultContext) GetRequestID() string {
+	return c.requestID
+}
+
+// GetRequestID 别名函数，保持一致
+func GetRequestID(ctx Context) string {
+	return ctx.GetRequestID()
 }

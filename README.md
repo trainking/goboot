@@ -3,6 +3,7 @@
 - [goboot](#goboot)
 	- [概述](#概述)
 	- [快速开始](#快速开始)
+		- [使用bootctl](#使用bootctl)
 		- [开发一个http服务器](#开发一个http服务器)
 		- [开发一个gRPC服务](#开发一个grpc服务)
 		- [开发一个游戏服务器](#开发一个游戏服务器)
@@ -15,6 +16,37 @@
 **goboot**是个一个**Golang**开发过程中，使用的一些经验总结的库，涵盖`Web`开发和游戏开发领域。
 
 ## 快速开始
+
+### 使用bootctl
+
+**goboot**推荐使用`bootctl`命令行工具，来生成代码结构和代码，方便在多人开发时，控制编码规范。具体[参考](./docs/guide/bootctl.m)。
+
+一个规范的目录结构如下:
+
+```
+├─bin                             # build之后的发布包
+├─cmd                             # 自定义的命令行工具
+├─configs                         # 所有的配置文件
+├─docs                            # 项目相关文档
+|  ├─devel                        # 开发相关文档，如接口描述
+│  └─guide                        # 教程相关文档
+├─example                         # 一些小示例，或测试demo
+├─internal                        # 业务代码
+│  ├─api                          # 应用程序接口，http和game
+│  │  ├─gameserver
+│  │  │  └─gateway
+│  │  └─helloworld
+│  │      └─user
+│  ├─pb                           # protbuf生成库
+│  │  └─proto                     # .proto文件
+│  └─service                      # 服务
+│      └─user
+│          ├─client
+│          └─server
+├─logs                            # 日志
+│  └─Gateway
+└─pkg                             # 公共包
+```
 
 ### 开发一个http服务器
 

@@ -1,6 +1,7 @@
 package gameapi
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"os"
@@ -16,6 +17,7 @@ import (
 var CMD = func() *cli.Command {
 
 	var name string    // 名称
+	var option string  // 操作符
 	var addr string    // 监听地址
 	var instanceID int // 实例ID
 	var network string // 使用协议
@@ -30,26 +32,13 @@ var CMD = func() *cli.Command {
 				return errors.New("must a name")
 			}
 
-			// 创建api的目录
-			if err := os.MkdirAll(filepath.Join("internal", "api", name), os.ModePerm); err != nil {
-				return err
-			}
-
-			// 创建main文件
-			if err := createMainFile(name, addr, instanceID); err != nil {
-				return err
-			}
-
-			// 创建配置文件
-			if err := createConfigYaml(name, network, natsUrl, etcdUrl); err != nil {
-				return err
-			}
-
-			// mod tidy
-			gomodCmd := exec.Command("go", "mod", "tidy")
-			_, err := gomodCmd.Output()
-			if err != nil {
-				return err
+			switch option {
+			case "c":
+				create(name, addr, instanceID, network, natsUrl, etcdUrl)
+			case "g":
+				generate(name)
+			default:
+				return errors.New("wrong option")
 			}
 
 			return nil
@@ -59,6 +48,12 @@ var CMD = func() *cli.Command {
 				Name:        "name, n",
 				Usage:       "game server name",
 				Destination: &name,
+			},
+			&cli.StringFlag{
+				Name:        "option, o",
+				Usage:       "option code, eg. c create; g gerante proto;",
+				Destination: &option,
+				Value:       "c",
 			},
 			&cli.StringFlag{
 				Name:        "addr, a",
@@ -92,6 +87,110 @@ var CMD = func() *cli.Command {
 			},
 		},
 	}
+}
+
+// create 创建
+func create(name string, addr string, instanceID int, network string, natsUrl string, etcdUrl string) error {
+	// 创建api的目录
+	if err := os.MkdirAll(filepath.Join("internal", "api", name), os.ModePerm); err != nil {
+		return err
+	}
+
+	// 创建main文件
+	if err := createMainFile(name, addr, instanceID); err != nil {
+		return err
+	}
+
+	// 创建配置文件
+	if err := createConfigYaml(name, network, natsUrl, etcdUrl); err != nil {
+		return err
+	}
+
+	// 创建opcode的proto
+	if err := createOpProto(name, nil); err != nil {
+		return err
+	}
+
+	// 创建game.proto
+	if err := createGameProto(name); err != nil {
+		return err
+	}
+
+	// mod tidy
+	gomodCmd := exec.Command("go", "mod", "tidy")
+	_, err := gomodCmd.Output()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func readGameProto(name string) ([]string, error) {
+	var result []string
+	f, err := os.Open(filepath.Join("internal", "pb", "proto", fmt.Sprintf("%s.game.proto", name)))
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	reader := bufio.NewReader(f)
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			break
+		}
+
+		// 读取到消息标志
+		if strings.Index(line, "@Message") > 0 {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				break
+			}
+			msgR := strings.Split(line, " ")
+			if len(msgR) > 2 {
+				result = append(result, msgR[1])
+			}
+		}
+	}
+
+	return result, nil
+}
+
+// generate 生成op.proto
+func generate(name string) error {
+	opcodArr, err := readGameProto(name)
+	if err != nil {
+		return err
+	}
+
+	var codeSB strings.Builder
+	for i, code := range opcodArr {
+		codeSB.WriteString(`  `)
+		codeSB.WriteString("OP_")
+		codeSB.WriteString(code)
+		codeSB.WriteString(" = ")
+		codeSB.WriteString(strconv.Itoa(i + 1))
+		codeSB.WriteString(";\n")
+	}
+
+	if err := createOpProto(name, map[string]interface{}{
+		"Codes": codeSB.String(),
+	}); err != nil {
+		return err
+	}
+
+	protocCmd1 := exec.Command("protoc", "--go_out=./internal/", fmt.Sprintf("./internal/pb/proto/%s.op.proto", name))
+	if _, err := protocCmd1.Output(); err != nil {
+		return err
+	}
+
+	protocCmd2 := exec.Command("protoc", "--go_out=./internal/", fmt.Sprintf("./internal/pb/proto/%s.game.proto", name))
+	if _, err := protocCmd2.Output(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // createMainFile 创建main入口go文件
@@ -136,6 +235,40 @@ func createConfigYaml(name string, network string, natsUrl string, etcdUrl strin
 		"network": network,
 		"nats":    natsUrl,
 		"etcd":    etcdSB.String(),
+	})
+	if _, err := f.WriteString(text); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// createOpProto 创建opcode的protobuf
+func createOpProto(name string, excm map[string]interface{}) error {
+	f, err := os.Create(filepath.Join("internal", "pb", "proto", fmt.Sprintf("%s.op.proto", name)))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	text := temptools.ReplaceTemplate(opPorotText, excm)
+	if _, err := f.WriteString(text); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// createGameProto 创建game.proto
+func createGameProto(name string) error {
+	f, err := os.Create(filepath.Join("internal", "pb", "proto", fmt.Sprintf("%s.game.proto", name)))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	text := temptools.ReplaceTemplate(gameProtoText, map[string]interface{}{
+		"name": name,
 	})
 	if _, err := f.WriteString(text); err != nil {
 		return err
