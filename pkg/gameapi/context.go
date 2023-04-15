@@ -94,3 +94,8 @@ func (c *DefaultContext) Valid(userID int64) {
 func (c *DefaultContext) GetRequestID() string {
 	return c.requestID
 }
+
+// GetRequestID 别名函数，保持一致
+func GetRequestID(ctx Context) string {
+	return ctx.GetRequestID()
+}

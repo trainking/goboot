@@ -1,9 +1,10 @@
-package boot
+package service
 
 import (
 	"fmt"
 	"net"
 
+	"github.com/trainking/goboot/pkg/boot"
 	"github.com/trainking/goboot/pkg/etcdx"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -11,7 +12,7 @@ import (
 
 // BaseService service的基础服务
 type BaseService struct {
-	BaseInstance
+	boot.BaseInstance
 
 	Listener       net.Listener          // 网络监听
 	GrpcServer     *grpc.Server          // GRPC服务端

@@ -4,13 +4,14 @@ import (
 	"github.com/trainking/goboot/internal/pb"
 	"github.com/trainking/goboot/pkg/boot"
 	"github.com/trainking/goboot/pkg/log"
+	"github.com/trainking/goboot/pkg/service"
 	"github.com/trainking/goboot/pkg/utils"
 )
 
 type (
 	Server struct {
 		pb.UnimplementedUserServiceServer
-		boot.BaseService
+		service.BaseService
 	}
 )
 
