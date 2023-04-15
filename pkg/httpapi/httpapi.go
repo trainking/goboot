@@ -134,7 +134,7 @@ func (a *App) Start() error {
 		Skipper:          middleware.DefaultSkipper,
 		Format:           `{"level": "ACCESS", "ts":"${time_rfc3339}", "id": "${id}", "remote_ip":"${remote_ip}", "host":"${host}","method":"${method}","uri":"${uri}","user_agent":"${user_agent}", "status":${status},"latency_human":"${latency_human}"}` + "\n",
 		CustomTimeFormat: "2006-01-02T15:04:05.000Z",
-		Output:           log.GetWriter(),
+		Output:           log.GetAccessWriter(),
 	}))
 	a.e.Use(middleware.Recover())
 	a.e.Use(middleware.CORS())
