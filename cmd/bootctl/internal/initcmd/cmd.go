@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/trainking/goboot/cmd/bootctl/conf"
 	"github.com/urfave/cli/v2"
@@ -37,6 +38,10 @@ var CMD = func() *cli.Command {
 				if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 					return err
 				}
+			}
+
+			if err := os.MkdirAll(filepath.Join("internal", "pb", "proto"), os.ModePerm); err != nil {
+				return err
 			}
 
 			gitignFile, err := os.Create(".gitignore")

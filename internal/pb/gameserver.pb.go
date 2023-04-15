@@ -20,72 +20,13 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// OpCode 操作符定义
-type OpCode int32
-
-const (
-	OpCode_None         OpCode = 0 // 心跳包占用
-	OpCode_Op_C2S_Login OpCode = 1
-	OpCode_Op_S2C_Login OpCode = 2
-	OpCode_Op_C2S_Say   OpCode = 3
-	OpCode_Op_S2C_Say   OpCode = 4
-	OpCode_Op_S2S_Hi    OpCode = 5
-)
-
-// Enum value maps for OpCode.
-var (
-	OpCode_name = map[int32]string{
-		0: "None",
-		1: "Op_C2S_Login",
-		2: "Op_S2C_Login",
-		3: "Op_C2S_Say",
-		4: "Op_S2C_Say",
-		5: "Op_S2S_Hi",
-	}
-	OpCode_value = map[string]int32{
-		"None":         0,
-		"Op_C2S_Login": 1,
-		"Op_S2C_Login": 2,
-		"Op_C2S_Say":   3,
-		"Op_S2C_Say":   4,
-		"Op_S2S_Hi":    5,
-	}
-)
-
-func (x OpCode) Enum() *OpCode {
-	p := new(OpCode)
-	*p = x
-	return p
-}
-
-func (x OpCode) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (OpCode) Descriptor() protoreflect.EnumDescriptor {
-	return file_gameserver_proto_enumTypes[0].Descriptor()
-}
-
-func (OpCode) Type() protoreflect.EnumType {
-	return &file_gameserver_proto_enumTypes[0]
-}
-
-func (x OpCode) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use OpCode.Descriptor instead.
-func (OpCode) EnumDescriptor() ([]byte, []int) {
-	return file_gameserver_proto_rawDescGZIP(), []int{0}
-}
-
 // C2S_Ping 客户端向服务器发送心跳
 type C2S_Ping struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	TickTime int64 `protobuf:"varint,1,opt,name=TickTime,proto3" json:"TickTime"`
+	TickTime int64 `protobuf:"varint,1,opt,name=TickTime,proto3" json:"TickTime,omitempty"`
 }
 
 func (x *C2S_Ping) Reset() {
@@ -132,7 +73,7 @@ type S2C_Pong struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	OK bool `protobuf:"varint,1,opt,name=OK,proto3" json:"OK"`
+	OK bool `protobuf:"varint,1,opt,name=OK,proto3" json:"OK,omitempty"`
 }
 
 func (x *S2C_Pong) Reset() {
@@ -180,8 +121,8 @@ type C2S_Login struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Account  string `protobuf:"bytes,1,opt,name=Account,proto3" json:"Account"`
-	Password string `protobuf:"bytes,2,opt,name=Password,proto3" json:"Password"`
+	Account  string `protobuf:"bytes,1,opt,name=Account,proto3" json:"Account,omitempty"`
+	Password string `protobuf:"bytes,2,opt,name=Password,proto3" json:"Password,omitempty"`
 }
 
 func (x *C2S_Login) Reset() {
@@ -235,7 +176,7 @@ type S2C_Login struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Ok bool `protobuf:"varint,1,opt,name=Ok,proto3" json:"Ok"`
+	Ok bool `protobuf:"varint,1,opt,name=Ok,proto3" json:"Ok,omitempty"`
 }
 
 func (x *S2C_Login) Reset() {
@@ -283,8 +224,8 @@ type C2S_Say struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Actor int64  `protobuf:"varint,1,opt,name=Actor,proto3" json:"Actor"`
-	Word  string `protobuf:"bytes,2,opt,name=Word,proto3" json:"Word"`
+	Actor int64  `protobuf:"varint,1,opt,name=Actor,proto3" json:"Actor,omitempty"`
+	Word  string `protobuf:"bytes,2,opt,name=Word,proto3" json:"Word,omitempty"`
 }
 
 func (x *C2S_Say) Reset() {
@@ -338,7 +279,7 @@ type S2C_Say struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Word string `protobuf:"bytes,1,opt,name=Word,proto3" json:"Word"`
+	Word string `protobuf:"bytes,1,opt,name=Word,proto3" json:"Word,omitempty"`
 }
 
 func (x *S2C_Say) Reset() {
@@ -386,7 +327,7 @@ type S2S_Hi struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Repeat string `protobuf:"bytes,1,opt,name=Repeat,proto3" json:"Repeat"`
+	Repeat string `protobuf:"bytes,1,opt,name=Repeat,proto3" json:"Repeat,omitempty"`
 }
 
 func (x *S2S_Hi) Reset() {
@@ -450,14 +391,7 @@ var file_gameserver_proto_rawDesc = []byte{
 	0x72, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x57, 0x6f, 0x72, 0x64, 0x22, 0x20,
 	0x0a, 0x06, 0x53, 0x32, 0x53, 0x5f, 0x48, 0x69, 0x12, 0x16, 0x0a, 0x06, 0x52, 0x65, 0x70, 0x65,
 	0x61, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x52, 0x65, 0x70, 0x65, 0x61, 0x74,
-	0x2a, 0x65, 0x0a, 0x06, 0x4f, 0x70, 0x43, 0x6f, 0x64, 0x65, 0x12, 0x08, 0x0a, 0x04, 0x4e, 0x6f,
-	0x6e, 0x65, 0x10, 0x00, 0x12, 0x10, 0x0a, 0x0c, 0x4f, 0x70, 0x5f, 0x43, 0x32, 0x53, 0x5f, 0x4c,
-	0x6f, 0x67, 0x69, 0x6e, 0x10, 0x01, 0x12, 0x10, 0x0a, 0x0c, 0x4f, 0x70, 0x5f, 0x53, 0x32, 0x43,
-	0x5f, 0x4c, 0x6f, 0x67, 0x69, 0x6e, 0x10, 0x02, 0x12, 0x0e, 0x0a, 0x0a, 0x4f, 0x70, 0x5f, 0x43,
-	0x32, 0x53, 0x5f, 0x53, 0x61, 0x79, 0x10, 0x03, 0x12, 0x0e, 0x0a, 0x0a, 0x4f, 0x70, 0x5f, 0x53,
-	0x32, 0x43, 0x5f, 0x53, 0x61, 0x79, 0x10, 0x04, 0x12, 0x0d, 0x0a, 0x09, 0x4f, 0x70, 0x5f, 0x53,
-	0x32, 0x53, 0x5f, 0x48, 0x69, 0x10, 0x05, 0x42, 0x06, 0x5a, 0x04, 0x2e, 0x2f, 0x70, 0x62, 0x62,
-	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x42, 0x06, 0x5a, 0x04, 0x2e, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -472,17 +406,15 @@ func file_gameserver_proto_rawDescGZIP() []byte {
 	return file_gameserver_proto_rawDescData
 }
 
-var file_gameserver_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_gameserver_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_gameserver_proto_goTypes = []interface{}{
-	(OpCode)(0),       // 0: pb.OpCode
-	(*C2S_Ping)(nil),  // 1: pb.C2S_Ping
-	(*S2C_Pong)(nil),  // 2: pb.S2C_Pong
-	(*C2S_Login)(nil), // 3: pb.C2S_Login
-	(*S2C_Login)(nil), // 4: pb.S2C_Login
-	(*C2S_Say)(nil),   // 5: pb.C2S_Say
-	(*S2C_Say)(nil),   // 6: pb.S2C_Say
-	(*S2S_Hi)(nil),    // 7: pb.S2S_Hi
+	(*C2S_Ping)(nil),  // 0: pb.C2S_Ping
+	(*S2C_Pong)(nil),  // 1: pb.S2C_Pong
+	(*C2S_Login)(nil), // 2: pb.C2S_Login
+	(*S2C_Login)(nil), // 3: pb.S2C_Login
+	(*C2S_Say)(nil),   // 4: pb.C2S_Say
+	(*S2C_Say)(nil),   // 5: pb.S2C_Say
+	(*S2S_Hi)(nil),    // 6: pb.S2S_Hi
 }
 var file_gameserver_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -588,14 +520,13 @@ func file_gameserver_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_gameserver_proto_rawDesc,
-			NumEnums:      1,
+			NumEnums:      0,
 			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_gameserver_proto_goTypes,
 		DependencyIndexes: file_gameserver_proto_depIdxs,
-		EnumInfos:         file_gameserver_proto_enumTypes,
 		MessageInfos:      file_gameserver_proto_msgTypes,
 	}.Build()
 	File_gameserver_proto = out.File
