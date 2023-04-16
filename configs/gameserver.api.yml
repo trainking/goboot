@@ -19,3 +19,7 @@ Prefix: "/gameserver"
 # 服务注册的Etcd地址
 Etcd:
   - "192.168.1.14:2379"
+# 启用tls，保护tcp or kcp连接
+TLSConf:
+    CertFile: "../ssldata/cert.crt"
+    KeyFile: "../ssldata/private.key"
