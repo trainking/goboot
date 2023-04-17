@@ -19,6 +19,14 @@ type Robot struct {
 func New(network string, addr string) *Robot {
 	r := new(Robot)
 
+	c := newConn(network, addr)
+
+	r.client = gameapi.NewClient(c, 1024, 1024, 3*time.Second)
+
+	return r
+}
+
+func newConn(network string, addr string) net.Conn {
 	var c net.Conn
 	var e error
 	switch network {
@@ -30,10 +38,7 @@ func New(network string, addr string) *Robot {
 	if nil != e {
 		panic(e)
 	}
-
-	r.client = gameapi.NewClient(c, 1024, 1024, 3*time.Second)
-
-	return r
+	return c
 }
 
 // Login 玩家登录

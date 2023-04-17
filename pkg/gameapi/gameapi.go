@@ -2,7 +2,6 @@ package gameapi
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -239,18 +238,6 @@ func (a *App) Init() (err error) {
 		}
 	default:
 		return errors.Wrap(ErrNoImplementNetwork, network)
-	}
-	// 判断是否设置了TLS
-	tlsConf := a.Config.GetStringMapString("TLSConf")
-	if len(tlsConf) > 0 {
-		cert, err := tls.LoadX509KeyPair(tlsConf["certfile"], tlsConf["keyfile"])
-		if err != nil {
-			return err
-		}
-
-		a.listener = tls.NewListener(a.listener, &tls.Config{
-			Certificates: []tls.Certificate{cert},
-		})
 	}
 
 	// 监听广播的其他实例消息
