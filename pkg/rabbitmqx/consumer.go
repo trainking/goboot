@@ -1,6 +1,10 @@
 package rabbitmqx
 
-import "github.com/wagslane/go-rabbitmq"
+import (
+	"runtime"
+
+	"github.com/wagslane/go-rabbitmq"
+)
 
 // Consumer 消费者
 type Consumer struct {
@@ -24,6 +28,7 @@ func NewConsumer(mqUrl string) (*Consumer, error) {
 	return &Consumer{consumer: consumer, options: []func(*rabbitmq.ConsumeOptions){
 		rabbitmq.WithConsumeOptionsBindingExchangeDurable,
 		rabbitmq.WithConsumeOptionsQueueDurable,
+		rabbitmq.WithConsumeOptionsConcurrency(runtime.NumCPU()),
 	}}, nil
 }
 
