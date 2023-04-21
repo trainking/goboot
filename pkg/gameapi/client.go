@@ -2,6 +2,7 @@ package gameapi
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -54,7 +55,10 @@ func (c *Client) asyncDo(fn func()) {
 
 // Ping 发送心跳
 func (c *Client) Ping() {
-	c.Conn.Write(HeartPacket.Serialize())
+	if _, err := c.Conn.Write(HeartPacket.Serialize()); err != nil {
+		c.Close()
+		fmt.Printf("Ping error: %v\n", err)
+	}
 }
 
 // KeepAlive 保持心跳
@@ -63,7 +67,7 @@ func (c *Client) KeepAlive(interval time.Duration) {
 		return
 	}
 	if interval <= 0 {
-		interval = time.Second * 30
+		interval = time.Second * 3
 	}
 
 	time.AfterFunc(interval, func() {

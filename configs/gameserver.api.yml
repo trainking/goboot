@@ -1,5 +1,5 @@
 # 传输层协议，tcp, kcp
-Network: "kcp"
+Network: "tcp"
 # 每个连接的读超时(等于客户端心跳的超时)，秒为单位
 ConnReadTimeout: 10
 # 每个连接的写超时，秒为单位
