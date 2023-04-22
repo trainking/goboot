@@ -12,9 +12,9 @@ func main() {
 	// 	startRobot(strconv.Itoa(i), "123456")
 	// }
 
-	r1 := robot.New("kcp", "127.0.0.1:6001")
+	r1 := robot.NewTLS("tcp", "192.168.1.30:6001", "../ssldata/server.cert")
 	startRobot(r1, "1", "123456")
-	r2 := robot.New("kcp", "127.0.0.1:6001")
+	r2 := robot.NewTLS("tcp", "192.168.1.30:6001", "../ssldata/server.cert")
 	startRobot(r2, "2", "123456")
 
 	r2.Say(1, "2 say hello")

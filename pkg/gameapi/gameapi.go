@@ -2,6 +2,7 @@ package gameapi
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -39,6 +40,7 @@ type (
 		disconnectListener Listener       // 会话断开时的连接监听器
 		beforeMiddleware   Middleware     // 会话处理消息之前执行的监听器
 		creator            SessionCreator // 会话创建时，预处理的生成器
+		tlsConfig          *tls.Config    // TLS的配置
 
 		router map[uint16]Handler // 处理器映射
 
@@ -209,6 +211,18 @@ func (a *App) Init() (err error) {
 		}
 	}
 
+	// 加载tls配置
+	tlsConfigMap := a.Config.GetStringMapString("TLS")
+	if len(tlsConfigMap) > 0 {
+		cert, err := tls.LoadX509KeyPair(tlsConfigMap["certfile"], tlsConfigMap["keyfile"])
+		if err != nil {
+			return err
+		}
+		a.tlsConfig = &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		}
+	}
+
 	// 根据配置传输层协议
 	network := a.Config.GetString("Network")
 	switch network {
@@ -216,6 +230,14 @@ func (a *App) Init() (err error) {
 		a.listener, err = net.Listen("tcp", a.Addr)
 		if err != nil {
 			return err
+		}
+
+		if a.tlsConfig != nil {
+			a.creator = func(c net.Conn, a *App) *Session {
+				tlsConn := tls.Server(c, a.tlsConfig)
+
+				return NewSession(tlsConn, a)
+			}
 		}
 	case "kcp":
 		a.listener, err = kcp.Listen(a.Addr)
@@ -234,6 +256,10 @@ func (a *App) Init() (err error) {
 			kcpConn.SetWriteBuffer(4 * 65536 * 1024)
 			kcpConn.SetACKNoDelay(true)
 
+			if a.tlsConfig != nil {
+				tlsConn := tls.Server(kcpConn, a.tlsConfig)
+				return NewSession(tlsConn, a)
+			}
 			return NewSession(c, a)
 		}
 	default:

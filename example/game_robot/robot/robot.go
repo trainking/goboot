@@ -1,8 +1,11 @@
 package robot
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"time"
 
@@ -22,6 +25,30 @@ func New(network string, addr string) *Robot {
 	c := newConn(network, addr)
 
 	r.client = gameapi.NewClient(c, 1024, 1024, 3*time.Second)
+
+	return r
+}
+
+func NewTLS(network string, addr string, certFile string) *Robot {
+	r := new(Robot)
+
+	c := newConn(network, addr)
+	cert, err := ioutil.ReadFile(certFile)
+	if err != nil {
+		panic(err)
+	}
+
+	certPool := x509.NewCertPool()
+	certPool.AppendCertsFromPEM(cert)
+
+	// 创建TLS配置
+	tlsConfig := &tls.Config{
+		RootCAs: certPool,
+	}
+
+	tlsConn := tls.Client(c, tlsConfig)
+
+	r.client = gameapi.NewClient(tlsConn, 1024, 1024, 3*time.Second)
 
 	return r
 }
