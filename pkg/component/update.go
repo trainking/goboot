@@ -28,12 +28,14 @@ type (
 		lastTime   time.Time // 最后执行时间
 		frameIndex int32     // 帧号
 		endIndex   int32     // 最后执行帧号，最后一帧是 endIdex -1
+		isRunning  bool      // 是否正在运行
 
 		closeChan chan struct{}
 		closeOnce sync.Once
 	}
 )
 
+// NewFixedUpdate 创建一个FixedUpdate
 func NewFixedUpdate(ctx context.Context, u IUpdate, deltaTime float64, endIndex int32) *FixedUpdate {
 	return &FixedUpdate{
 		ctx:       ctx,
@@ -55,20 +57,30 @@ func (f *FixedUpdate) Start() error {
 	return nil
 }
 
+// IsRunning 判断update是否正在运行
+func (f *FixedUpdate) IsRunning() bool {
+	return f.isRunning
+}
+
 // run 执行主体
 func (f *FixedUpdate) run() {
+	f.isRunning = true
+	defer func() {
+		recover()
+		f.Stop()
+		f.isRunning = false
+	}()
+
 	for {
 		select {
 		case <-f.closeChan:
 			return
 		case <-f.ctx.Done():
-			f.Stop()
 			return
 		default:
 		}
 
 		if f.frameIndex == f.endIndex {
-			f.Stop()
 			return
 		}
 
@@ -92,7 +104,8 @@ func (f *FixedUpdate) run() {
 func (f *FixedUpdate) Stop() {
 	f.closeOnce.Do(func() {
 		close(f.closeChan)
-	})
 
-	f.iUpdate.Destroy()
+		// 执行IUpdate实现的销毁
+		f.iUpdate.Destroy()
+	})
 }

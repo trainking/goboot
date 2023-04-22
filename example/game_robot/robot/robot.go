@@ -29,7 +29,7 @@ func New(network string, addr string) *Robot {
 	return r
 }
 
-func NewTLS(network string, addr string, certFile string) *Robot {
+func NewTLS(network string, addr string, serverName string, certFile string) *Robot {
 	r := new(Robot)
 
 	c := newConn(network, addr)
@@ -43,7 +43,8 @@ func NewTLS(network string, addr string, certFile string) *Robot {
 
 	// 创建TLS配置
 	tlsConfig := &tls.Config{
-		RootCAs: certPool,
+		ServerName: serverName,
+		RootCAs:    certPool,
 	}
 
 	tlsConn := tls.Client(c, tlsConfig)
