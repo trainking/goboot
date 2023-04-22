@@ -240,6 +240,12 @@ func (a *App) Init() (err error) {
 		if err != nil {
 			return err
 		}
+	case "websocket":
+		netConfig.WebSocketPath = a.Config.GetString("WebsocketPath")
+		a.listener, err = NewWebSocketNetListener(netConfig)
+		if err != nil {
+			return err
+		}
 	default:
 		return errors.Wrap(ErrNoImplementNetwork, network)
 	}
