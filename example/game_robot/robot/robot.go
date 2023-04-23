@@ -49,8 +49,9 @@ func NewTLS(network string, addr string, serverName string, certFile string) *Ro
 	}
 
 	r.client, err = gameapi.NewClient(network, gameapi.NetConfig{
-		Addr:      addr,
-		TLSConfig: tlsConfig,
+		Addr:          addr,
+		TLSConfig:     tlsConfig,
+		WebSocketPath: "/ws",
 	}, 1024, 1024, 3*time.Second)
 	if err != nil {
 		panic(err)

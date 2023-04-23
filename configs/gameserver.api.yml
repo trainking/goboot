@@ -1,5 +1,5 @@
 # 传输层协议，tcp, kcp
-Network: "tcp"
+Network: "websocket"
 # websocket时使用升级路径
 WebsocketPath: "/ws"
 # 每个连接的读超时(等于客户端心跳的超时)，秒为单位
