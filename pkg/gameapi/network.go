@@ -236,13 +236,14 @@ func NewWebSocketNetListener(config NetConfig) (NetListener, error) {
 				panic(err)
 			}
 		}()
-	}
 
-	go func() {
-		if err := server.ListenAndServe(); err != nil {
-			panic(err)
-		}
-	}()
+	} else {
+		go func() {
+			if err := server.ListenAndServe(); err != nil {
+				panic(err)
+			}
+		}()
+	}
 
 	l.server = server
 
