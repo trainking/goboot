@@ -1,36 +1,87 @@
 package gameapi
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"sync"
 	"time"
 
+	"github.com/gorilla/websocket"
+	"github.com/xtaci/kcp-go"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-// Client 客户端实现，用于压测和机器人测试
-type Client struct {
-	Conn      net.Conn
-	closeConn chan struct{}
-	closeOnce sync.Once
-	waitGroup sync.WaitGroup
+type (
+	// Client tcp/kcp的传输客户端
+	Client struct {
+		Conn      NetConn
+		closeConn chan struct{}
+		closeOnce sync.Once
+		waitGroup sync.WaitGroup
 
-	running bool
+		running bool
 
-	receiveChan chan Packet
-	sendChan    chan Packet
-}
+		receiveChan chan Packet
+		sendChan    chan Packet
+	}
+)
 
 // NewClient 新客户端
 // conn 连接协议实例
 // readLimit 最大读取包
 // sendLimit 最大写入包
 // heart 心跳周期
-func NewClient(conn net.Conn, readLimit int, sendLimit int, heart time.Duration) *Client {
+func NewClient(network string, config NetConfig, readLimit int, sendLimit int, heart time.Duration) (*Client, error) {
+	var netConn NetConn
+	switch network {
+	case "tcp":
+		c, err := net.Dial("tcp", config.Addr)
+		if err != nil {
+			return nil, err
+		}
+
+		if config.TLSConfig != nil {
+			tlsConn := tls.Client(c, config.TLSConfig)
+
+			netConn = NewTcpNetConn(tlsConn, &config)
+		} else {
+			netConn = NewTcpNetConn(c, &config)
+		}
+	case "kcp":
+		c, err := kcp.Dial(config.Addr)
+		if err != nil {
+			return nil, err
+		}
+
+		if config.TLSConfig != nil {
+			tlsConn := tls.Client(c, config.TLSConfig)
+
+			netConn = NewTcpNetConn(tlsConn, &config)
+		} else {
+			netConn = NewTcpNetConn(c, &config)
+		}
+	case "websocket":
+		u := url.URL{Scheme: "ws", Host: config.Addr, Path: config.WebSocketPath}
+		var dialer *websocket.Dialer
+		if config.TLSConfig != nil {
+			u.Scheme = "wss"
+			dialer = &websocket.Dialer{TLSClientConfig: config.TLSConfig}
+		} else {
+			dialer = websocket.DefaultDialer
+		}
+		c, _, err := dialer.Dial(u.String(), nil)
+		if err != nil {
+			return nil, err
+		}
+		netConn = NewWebSocketNetConn(c, &config)
+	default:
+		return nil, errors.New("no implement proto")
+	}
 	client := &Client{
-		Conn:        conn,
+		Conn:        netConn,
 		closeConn:   make(chan struct{}),
 		receiveChan: make(chan Packet, readLimit),
 		sendChan:    make(chan Packet, sendLimit),
@@ -42,7 +93,7 @@ func NewClient(conn net.Conn, readLimit int, sendLimit int, heart time.Duration)
 
 	client.KeepAlive(heart)
 
-	return client
+	return client, nil
 }
 
 func (c *Client) asyncDo(fn func()) {
@@ -55,7 +106,7 @@ func (c *Client) asyncDo(fn func()) {
 
 // Ping 发送心跳
 func (c *Client) Ping() {
-	if _, err := c.Conn.Write(HeartPacket.Serialize()); err != nil {
+	if err := c.Conn.WritePacket(HeartPacket); err != nil {
 		c.Close()
 		fmt.Printf("Ping error: %v\n", err)
 	}
@@ -91,7 +142,7 @@ func (c *Client) readLoop() {
 		default:
 		}
 
-		n, err := Packing(c.Conn)
+		n, err := c.Conn.ReadPacket()
 		if err != nil {
 			return
 		}
@@ -114,7 +165,7 @@ func (c *Client) sendLoop() {
 		case <-c.closeConn:
 			return
 		case p := <-c.sendChan:
-			if _, err := c.Conn.Write(p.Serialize()); err != nil {
+			if err := c.Conn.WritePacket(p); err != nil {
 				fmt.Println("Send Error: ", err)
 				return
 			}

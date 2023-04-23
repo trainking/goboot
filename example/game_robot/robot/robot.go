@@ -6,12 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"time"
 
 	"github.com/trainking/goboot/internal/pb"
 	"github.com/trainking/goboot/pkg/gameapi"
-	"github.com/xtaci/kcp-go"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -22,9 +20,13 @@ type Robot struct {
 func New(network string, addr string) *Robot {
 	r := new(Robot)
 
-	c := newConn(network, addr)
-
-	r.client = gameapi.NewClient(c, 1024, 1024, 3*time.Second)
+	var err error
+	r.client, err = gameapi.NewClient(network, gameapi.NetConfig{
+		Addr: addr,
+	}, 1024, 1024, 3*time.Second)
+	if err != nil {
+		panic(err)
+	}
 
 	return r
 }
@@ -32,7 +34,6 @@ func New(network string, addr string) *Robot {
 func NewTLS(network string, addr string, serverName string, certFile string) *Robot {
 	r := new(Robot)
 
-	c := newConn(network, addr)
 	cert, err := ioutil.ReadFile(certFile)
 	if err != nil {
 		panic(err)
@@ -47,26 +48,15 @@ func NewTLS(network string, addr string, serverName string, certFile string) *Ro
 		RootCAs:    certPool,
 	}
 
-	tlsConn := tls.Client(c, tlsConfig)
-
-	r.client = gameapi.NewClient(tlsConn, 1024, 1024, 3*time.Second)
+	r.client, err = gameapi.NewClient(network, gameapi.NetConfig{
+		Addr:      addr,
+		TLSConfig: tlsConfig,
+	}, 1024, 1024, 3*time.Second)
+	if err != nil {
+		panic(err)
+	}
 
 	return r
-}
-
-func newConn(network string, addr string) net.Conn {
-	var c net.Conn
-	var e error
-	switch network {
-	case "kcp":
-		c, e = kcp.Dial(addr)
-	case "tcp":
-		c, e = net.Dial("tcp", addr)
-	}
-	if nil != e {
-		panic(e)
-	}
-	return c
 }
 
 // Login 玩家登录

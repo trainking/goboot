@@ -123,13 +123,19 @@ func (l *TcpNetListener) Close() {
 
 // ReadPacket 读取数据报文
 func (t *TcpNetConn) ReadPacket() (Packet, error) {
-	t.conn.SetReadDeadline(time.Now().Add(t.config.ReadeTimeout))
+	if t.config.ReadeTimeout > 0 {
+		t.conn.SetReadDeadline(time.Now().Add(t.config.ReadeTimeout))
+	}
+
 	return Packing(t.conn)
 }
 
 // WritePacket 写入数据报文
 func (t *TcpNetConn) WritePacket(p Packet) error {
-	t.conn.SetWriteDeadline(time.Now().Add(t.config.WriteTimeout))
+	if t.config.WriteTimeout > 0 {
+		t.conn.SetWriteDeadline(time.Now().Add(t.config.WriteTimeout))
+	}
+
 	_, err := t.conn.Write(p.Serialize())
 	return err
 }
@@ -184,13 +190,19 @@ func NewKcpNetConn(c net.Conn, config *NetConfig) NetConn {
 
 // ReadPacket 读取数据包
 func (k *KcpNetConn) ReadPacket() (Packet, error) {
-	k.conn.SetReadDeadline(time.Now().Add(k.config.ReadeTimeout))
+	if k.config.ReadeTimeout > 0 {
+		k.conn.SetReadDeadline(time.Now().Add(k.config.ReadeTimeout))
+	}
+
 	return Packing(k.conn)
 }
 
 // WritePacket 写入数据包
 func (k *KcpNetConn) WritePacket(p Packet) error {
-	k.conn.SetWriteDeadline(time.Now().Add(k.config.WriteTimeout))
+	if k.config.WriteTimeout > 0 {
+		k.conn.SetWriteDeadline(time.Now().Add(k.config.WriteTimeout))
+	}
+
 	_, err := k.conn.Write(p.Serialize())
 	return err
 }
@@ -266,7 +278,10 @@ func NewWebSocketNetConn(c *websocket.Conn, config *NetConfig) NetConn {
 
 // ReadPacket 读取数据包
 func (w *WebSocketNetConn) ReadPacket() (Packet, error) {
-	w.conn.SetReadDeadline(time.Now().Add(w.config.ReadeTimeout))
+	if w.config.ReadeTimeout > 0 {
+		w.conn.SetReadDeadline(time.Now().Add(w.config.ReadeTimeout))
+	}
+
 	_, message, err := w.conn.ReadMessage()
 	if err != nil {
 		return nil, err
@@ -277,7 +292,10 @@ func (w *WebSocketNetConn) ReadPacket() (Packet, error) {
 
 // WritePacket 写入数据包
 func (w *WebSocketNetConn) WritePacket(p Packet) error {
-	w.conn.SetWriteDeadline(time.Now().Add(w.config.ReadeTimeout))
+	if w.config.WriteTimeout > 0 {
+		w.conn.SetWriteDeadline(time.Now().Add(w.config.WriteTimeout))
+	}
+
 	return w.conn.WriteMessage(websocket.BinaryMessage, p.Serialize())
 }
 
