@@ -40,14 +40,10 @@ func (m *GateWayM) Init(a *gameapi.App) {
 			return nil
 		},
 	})
-}
 
-func (m *GateWayM) Group() map[uint16]gameapi.Handler {
-	return map[uint16]gameapi.Handler{
-		uint16(pb.OpCode_Op_C2S_Login): m.C2S_LoginHandler,
-		uint16(pb.OpCode_Op_C2S_Say):   m.C2S_SayHandler,
-		uint16(pb.OpCode_Op_S2S_Hi):    m.S2S_Hi,
-	}
+	a.AddHandler(pb.OpCode_Op_C2S_Login, m.C2S_LoginHandler)
+	a.AddHandler(pb.OpCode_Op_C2S_Say, m.C2S_SayHandler)
+	a.AddHandler(pb.OpCode_Op_S2S_Hi, m.S2S_Hi)
 }
 
 // C2S_LoginHandler 登录
@@ -67,7 +63,7 @@ func (m *GateWayM) C2S_LoginHandler(c gameapi.Context) error {
 		result.Ok = false
 	}
 
-	return c.Send(uint16(pb.OpCode_Op_S2C_Login), result)
+	return c.Send(pb.OpCode_Op_S2C_Login, result)
 }
 
 func (m *GateWayM) C2S_SayHandler(c gameapi.Context) error {
@@ -82,7 +78,7 @@ func (m *GateWayM) C2S_SayHandler(c gameapi.Context) error {
 		Repeat: "repeat: " + msg.Word,
 	})
 
-	return c.SendActor(msg.Actor, uint16(pb.OpCode_Op_S2C_Say), &pb.S2C_Say{
+	return c.SendActor(msg.Actor, pb.OpCode_Op_S2C_Say, &pb.S2C_Say{
 		Word: msg.Word,
 	})
 }

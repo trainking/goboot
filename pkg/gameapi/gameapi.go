@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -60,9 +61,6 @@ type (
 
 		// 初始化模块
 		Init(app *App)
-
-		// 模块的分组路由
-		Group() map[uint16]Handler
 	}
 
 	// Handler 处理类型
@@ -118,8 +116,12 @@ func (a *App) AddAfterMiddleware(m Middleware) {
 }
 
 // AddHandler 增加处理器
-func (a *App) AddHandler(opcode uint16, h Handler) {
-	a.router[opcode] = h
+func (a *App) AddHandler(opcode interface{}, h Handler) {
+	_op := opcodeChange(opcode)
+	if _op == 0 {
+		return
+	}
+	a.router[_op] = h
 }
 
 // AddModule 增加所有模块
@@ -188,11 +190,6 @@ func (a *App) Init() (err error) {
 	// 初始化各个模块
 	for _, m := range a.modules {
 		m.Init(a)
-
-		// 加入路由映射
-		for k, v := range m.Group() {
-			a.AddHandler(k, v)
-		}
 	}
 
 	var netConfig = NetConfig{
@@ -388,4 +385,16 @@ func (a *App) OnDisConnect(sesssion *Session) {
 	if a.disconnectListener != nil {
 		a.disconnectListener(sesssion)
 	}
+}
+
+// opcodeChange opcode的类型转换
+func opcodeChange(opcode interface{}) uint16 {
+	var _op uint16
+	switch reflect.TypeOf(opcode).Kind() {
+	case reflect.Int32, reflect.Int, reflect.Int64, reflect.Uint, reflect.Uint16, reflect.Uint32:
+		_op = uint16(reflect.ValueOf(opcode).Int())
+	default:
+		log.Errorf("wrong opcode %v kind: %v", opcode, reflect.TypeOf(opcode).Kind())
+	}
+	return _op
 }
