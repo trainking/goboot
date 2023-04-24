@@ -3,14 +3,12 @@ package gameapi
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
 	"github.com/trainking/goboot/pkg/boot"
 	"github.com/trainking/goboot/pkg/etcdx"
@@ -19,17 +17,12 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-const (
-	// 向NATS中push推送给其他玩家消息的键
-	NatsPushUserK = "GAME_PUSH_USER"
-)
-
 type (
 	// App 游戏服务器实现
 	App struct {
 		boot.BaseInstance
 
-		nc             *nats.Conn            // NATS消息分发
+		un             *UserNats             // 用户消息分发
 		listener       NetListener           // 网络监听
 		exitChan       chan struct{}         // 退出信号
 		waitGroup      sync.WaitGroup        // 等待携程控制
@@ -71,13 +64,6 @@ type (
 
 	// SessionCreator session创建生成器，做一些预处理
 	SessionCreator func(net.Conn, *App) *Session
-
-	// PushActorMessage 发送消息给远程玩家
-	PushActorMessage struct {
-		UserID int64  `json:"user_id"`
-		OpCode uint16 `json:"opcode"`
-		Msg    []byte `json:"msg"`
-	}
 )
 
 // New 创建一个游戏服务器接口实例
@@ -88,14 +74,14 @@ func New(name string, configPath string, addr string, instancdID int64) *App {
 		panic(err)
 	}
 
-	nc, err := nats.Connect(v.GetString("NatsUrl"))
+	un, err := NewUserNats(v.GetString("NatsUrl"))
 	if err != nil {
 		panic(err)
 	}
 
 	app := new(App)
 	app.Name = name
-	app.nc = nc
+	app.un = un
 	app.Config = v
 	app.Addr = addr
 	app.IntanceID = instancdID
@@ -179,18 +165,7 @@ func (a *App) sendActorLocation(userID int64, p Packet) error {
 
 // sendActorPush 发送消息给远程实例
 func (a *App) sendActorPush(userID int64, p Packet) error {
-	pushMsg := PushActorMessage{
-		UserID: userID,
-		OpCode: p.OpCode(),
-		Msg:    p.Body(),
-	}
-
-	b, err := json.Marshal(pushMsg)
-	if err != nil {
-		return err
-	}
-
-	return a.nc.Publish(NatsPushUserK, b)
+	return a.un.Publish(userID, p)
 }
 
 // Init 初始化服务
@@ -261,13 +236,13 @@ func (a *App) Init() (err error) {
 
 // subscribePushUserMsg 订阅消费推送玩家的消息
 func (a *App) subscribePushUserMsg() {
-	var subChan = make(chan *nats.Msg)
-	sub, err := a.nc.ChanSubscribe(NatsPushUserK, subChan)
-	if err != nil {
-		panic(err)
+	// 开启消费
+	if err := a.un.StartSubscribe(); err != nil {
+		log.Errorf("StartSubscribe Error: %v", err)
+		return
 	}
 	defer func() {
-		sub.Unsubscribe()
+		a.un.Close()
 		a.Stop()
 	}()
 
@@ -275,15 +250,9 @@ func (a *App) subscribePushUserMsg() {
 		select {
 		case <-a.exitChan:
 			return
-		case m := <-subChan:
-			var msg PushActorMessage
-			if err := json.Unmarshal(m.Data, &msg); err != nil {
-				log.Errorf("PushActorMessage Unmarshal Error: %v", err)
-				return
-			}
-
-			p := NewDefaultPacket(msg.Msg, msg.OpCode)
-			if err := a.sendActorLocation(msg.UserID, p); err != nil && err != ErrUserNoIn {
+		case m := <-a.un.Consume():
+			p := NewDefaultPacket(m.Msg, m.OpCode)
+			if err := a.sendActorLocation(m.UserID, p); err != nil && err != ErrUserNoIn {
 				log.Errorf("PushActorMessage sendActorLocation Error: %v", err)
 				return
 			}
