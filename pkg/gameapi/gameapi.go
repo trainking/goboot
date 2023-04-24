@@ -343,6 +343,9 @@ func (a *App) OnMessage(session *Session, p Packet) bool {
 	// 消息的分发
 	if h, ok := a.router[p.OpCode()]; ok {
 		go func() {
+			// 释放Packet
+			defer p.Free()
+
 			ctx := NewDefaultContext(context.Background(), a, session, p.OpCode(), p.Body())
 			// 处理消息之前，中间件过滤
 			for _, m := range a.beforeMiddleware {

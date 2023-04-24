@@ -208,6 +208,7 @@ func (s *Session) writeLoop() {
 			if err := s.conn.WritePacket(p); err != nil {
 				return
 			}
+			p.Free()
 		}
 	}
 }
