@@ -52,6 +52,8 @@
 
 #### 2.2.1 配置文件
 
+示例：
+
 ```yaml
 # 传输层协议，tcp, kcp
 Network: "kcp"
@@ -75,6 +77,25 @@ Prefix: "/gameserver"
 Etcd:
   - "192.168.1.9:2379"
 ```
+
+配置详解：
+
+| 配置项          | 类型              | 是否必须 | 说明                                                    |
+| :-------------- | :---------------- | :------- | :------------------------------------------------------ |
+| Prefix          | string            | 是       | 服务注册的前缀，服务注册key格式: <prefix>/<name>/<addr> |
+| Etcd            | []string          | 是       | Etcd地址，服务注册需要                                  |
+| NatsUrl         | string            | 是       | NATS的地址                                              |
+| Network         | string            | 是       | 传输协议，可以是`tcp`, `kcp`, `websocket`               |
+| WebsocketPath   | string            | 否       | 传输协议是`websocket`时必须                             |
+| ConnReadTimeout | int               | 是       | 每个连接的读超时(等于客户端心跳的超时)，秒为单位        |
+| ConnReadTimeout | int               | 是       | 每个连接的写超时，秒为单位                              |
+| ValidTimeout    | int               | 是       | 连接成功后，验证身份超时，秒为单位                      |
+| SendLimit       | int               | 是       | 最大发送消息包大小；发送消息缓冲区大小                  |
+| ReceiveLimit    | int               | 是       | 最大接收消息包大小；接收消息缓冲区大小                  |
+| HeartLimit      | int               | 是       | 心跳包限制数量, 每分钟不能超过的个数                    |
+| TLS             | map[string]string | 否       | TLS配置，配置了才开启                                   |
+| TLS.CertFile    | string            | 否       | cert文件路径                                            |
+| TLS.KeyFile     | string            | 否       | 密钥文件路径                                            |
 
 #### 2.2.2 应用协议
 

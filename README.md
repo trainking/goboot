@@ -2,18 +2,28 @@
 
 - [goboot](#goboot)
 	- [概述](#概述)
+	- [特性](#特性)
 	- [快速开始](#快速开始)
 		- [使用bootctl](#使用bootctl)
-		- [开发一个http服务器](#开发一个http服务器)
-		- [开发一个gRPC服务](#开发一个grpc服务)
-		- [开发一个游戏服务器](#开发一个游戏服务器)
+		- [http api](#http-api)
+		- [gRPC Service](#grpc-service)
+		- [Game Server](#game-server)
 	- [惯例](#惯例)
 	- [参考](#参考)
+	- [打赏作者](#打赏作者)
 
 
 ## 概述
 
 **goboot**是个一个**Golang**开发过程中，使用的一些经验总结的库，涵盖`Web`开发和游戏开发领域。
+
+## 特性
+
+* 高性能分布式服务器开发
+* 支持gRPC开发微服务
+* 支持http的API开发
+* 支持游戏服务器网关开发，支持`tcp`，`kcp`，`websocket`协议
+* 提供了`bootctl`作为，项目管理和代码生成工具
 
 ## 快速开始
 
@@ -48,7 +58,7 @@
 └─pkg                             # 公共包
 ```
 
-### 开发一个http服务器
+### http api
 
 **goboot**开发http服务器，只需要传入调用`httpapi`包，传入配置文件地址，监听端口，以及实例ID:
 
@@ -74,7 +84,7 @@ Module interface {
 
 > 依赖nats做消息转发，Etcd做服务注册
 
-### 开发一个gRPC服务
+### gRPC Service
 
 **goboot**开发gRPC服务器，同样只需要使用：
 
@@ -86,7 +96,7 @@ boot.BootServe(instance)
 
 不同的是，这里的server需要定制protobuf文件实现。
 
-### 开发一个游戏服务器
+### Game Server
 
 **goboot**开发游戏服务器，使用的`gameapi`包的实现：
 
@@ -137,3 +147,7 @@ Logger:
 * [HTTP API: http开发Api接口](./docs/guide/httpapi.md)
 * [Service: gRPC微服务](./docs/guide/service.md)
 * [bootctl：命令行工具](./docs/guide/bootctl.md)
+
+## 打赏作者
+
+![打赏](./docs/guide/image/w_20230424115444.jpg)
