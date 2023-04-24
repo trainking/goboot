@@ -394,8 +394,10 @@ func (a *App) OnDisConnect(sesssion *Session) {
 func opcodeChange(opcode interface{}) uint16 {
 	var _op uint16
 	switch reflect.TypeOf(opcode).Kind() {
-	case reflect.Int32, reflect.Int, reflect.Int64, reflect.Uint, reflect.Uint16, reflect.Uint32:
+	case reflect.Int32, reflect.Int, reflect.Int64:
 		_op = uint16(reflect.ValueOf(opcode).Int())
+	case reflect.Uint, reflect.Uint16, reflect.Uint32:
+		_op = uint16(reflect.ValueOf(opcode).Uint())
 	default:
 		log.Errorf("wrong opcode %v kind: %v", opcode, reflect.TypeOf(opcode).Kind())
 	}
