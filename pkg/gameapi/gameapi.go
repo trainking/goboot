@@ -29,9 +29,9 @@ type (
 		closeOnce      sync.Once             // 保证关闭只执行一次
 		serviceManager *etcdx.ServiceManager // etcd注册管理器
 
-		connectListener    Listener   // 会话建立时的连接监听
-		disconnectListener Listener   // 会话断开时的连接监听器
-		beforeMiddleware   Middleware // 会话处理消息之前执行的监听器
+		connectListener    Listener     // 会话建立时的连接监听
+		disconnectListener Listener     // 会话断开时的连接监听器
+		beforeMiddleware   []Middleware // 会话处理消息之前执行的监听器
 
 		router map[uint16]Handler // 处理器映射
 
@@ -44,7 +44,12 @@ type (
 	}
 
 	// Middleware 中间件处理
-	Middleware func(*Session, Packet) error
+	Middleware struct {
+		// Condition 是否要处理的opcode
+		Condition func(uint16) bool
+		// Do 处理执行
+		Do func(Context) error
+	}
 
 	// Listener 监听器
 	Listener func(*Session) error
@@ -102,8 +107,8 @@ func (a *App) SetDisconnectListener(l Listener) {
 }
 
 // SetBeforeMiddleware 设置消息处理前中间件
-func (a *App) SetBeforeMiddleware(m Middleware) {
-	a.beforeMiddleware = m
+func (a *App) AddBeforeMiddleware(m Middleware) {
+	a.beforeMiddleware = append(a.beforeMiddleware, m)
 }
 
 // AddHandler 增加处理器
@@ -332,17 +337,23 @@ func (a *App) OnConnect(session *Session) bool {
 
 // OnMessage 消息处理
 func (a *App) OnMessage(session *Session, p Packet) bool {
-	// 处理消息之前的预处理
-	if a.beforeMiddleware != nil {
-		if err := a.beforeMiddleware(session, p); err != nil {
-			log.Errorf("beforeMiddleware Error: %v", err)
-			return false
-		}
-	}
 	// 消息的分发
 	if h, ok := a.router[p.OpCode()]; ok {
+		ctx := NewDefaultContext(context.Background(), a, session, p.OpCode(), p.Body())
+		// 处理消息之前，中间件过滤
+		for _, m := range a.beforeMiddleware {
+			if !m.Condition(p.OpCode()) {
+				continue
+			}
+
+			if err := m.Do(ctx); err != nil {
+				log.Errorf("Middle %d is Error: %v", p.OpCode(), err)
+				return false
+			}
+		}
+
 		go func() {
-			if err := h(NewDefaultContext(context.Background(), a, session, p.Body())); err != nil {
+			if err := h(ctx); err != nil {
 				log.Errorf("Handler %d Error: %s ", p.OpCode(), err)
 			}
 		}()

@@ -30,6 +30,9 @@ type (
 		// Valid 验证玩家成功，传入用户ID
 		Valid(userID int64)
 
+		// GetOpCode 获取此次请求的opcode
+		GetOpCode() uint16
+
 		// GetRequestID 获得请求ID
 		GetRequestID() string
 	}
@@ -39,18 +42,20 @@ type (
 		a         *App
 		session   *Session
 		ctx       context.Context
+		opcode    uint16
 		body      []byte
 		requestID string
 	}
 )
 
 // NewDefaultContext
-func NewDefaultContext(ctx context.Context, a *App, session *Session, body []byte) Context {
+func NewDefaultContext(ctx context.Context, a *App, session *Session, opcode uint16, body []byte) Context {
 	id := uuid.New()
 	return &DefaultContext{
 		a:         a,
 		session:   session,
 		ctx:       ctx,
+		opcode:    opcode,
 		body:      body,
 		requestID: id.String(),
 	}
@@ -88,6 +93,11 @@ func (c *DefaultContext) Valid(userID int64) {
 	c.a.AddSession(userID, c.session)
 	c.session.valid()
 	c.session.SetUserID(userID)
+}
+
+// GetOpCode 获取此次处理的opcode
+func (c *DefaultContext) GetOpCode() uint16 {
+	return c.opcode
 }
 
 // GetRequestID 获得请求ID

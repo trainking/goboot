@@ -29,15 +29,16 @@ func (m *GateWayM) Init(a *gameapi.App) {
 	})
 
 	// 设置消息处理前中间件
-	a.SetBeforeMiddleware(func(s *gameapi.Session, p gameapi.Packet) error {
-		if p.OpCode() == uint16(pb.OpCode_Op_C2S_Login) {
+	a.AddBeforeMiddleware(gameapi.Middleware{
+		Condition: func(opcode uint16) bool {
+			return opcode != uint16(pb.OpCode_Op_C2S_Login)
+		},
+		Do: func(ctx gameapi.Context) error {
+			if !ctx.Session().IsValid() {
+				return fmt.Errorf("session is valid, opcode: %d", ctx.GetOpCode())
+			}
 			return nil
-		}
-
-		if !s.IsValid() {
-			return fmt.Errorf("session is valid, opcode: %d", p.OpCode())
-		}
-		return nil
+		},
 	})
 }
 
