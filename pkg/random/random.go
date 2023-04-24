@@ -30,3 +30,13 @@ func RandStringNumber(n int) (string, error) {
 
 	return fmt.Sprintf("%0"+strconv.FormatInt(int64(n), 10)+"d", rand.Int63n(int64(math.Pow10(n)))), nil
 }
+
+// RandNumber 随机一个指定访问的int [min,max)
+func RandNumber(min int, max int) int {
+	return rand.Intn(max-min) + min
+}
+
+// RandFloatNomarlsize 随机生成 (-1.0, 1.0) 的浮点数
+func RandFloatNomarlsize() float32 {
+	return rand.Float32()*2 - 1
+}

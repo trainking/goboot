@@ -1,14 +1,15 @@
 package robot
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
-	"net"
+	"io/ioutil"
 	"time"
 
 	"github.com/trainking/goboot/internal/pb"
 	"github.com/trainking/goboot/pkg/gameapi"
-	"github.com/xtaci/kcp-go"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -19,19 +20,42 @@ type Robot struct {
 func New(network string, addr string) *Robot {
 	r := new(Robot)
 
-	var c net.Conn
-	var e error
-	switch network {
-	case "kcp":
-		c, e = kcp.Dial(addr)
-	case "tcp":
-		c, e = net.Dial("tcp", addr)
-	}
-	if nil != e {
-		panic(e)
+	var err error
+	r.client, err = gameapi.NewClient(network, gameapi.NetConfig{
+		Addr: addr,
+	}, 1024, 1024, 3*time.Second)
+	if err != nil {
+		panic(err)
 	}
 
-	r.client = gameapi.NewClient(c, 1024, 1024, 3*time.Second)
+	return r
+}
+
+func NewTLS(network string, addr string, serverName string, certFile string) *Robot {
+	r := new(Robot)
+
+	cert, err := ioutil.ReadFile(certFile)
+	if err != nil {
+		panic(err)
+	}
+
+	certPool := x509.NewCertPool()
+	certPool.AppendCertsFromPEM(cert)
+
+	// 创建TLS配置
+	tlsConfig := &tls.Config{
+		ServerName: serverName,
+		RootCAs:    certPool,
+	}
+
+	r.client, err = gameapi.NewClient(network, gameapi.NetConfig{
+		Addr:          addr,
+		TLSConfig:     tlsConfig,
+		WebSocketPath: "/ws",
+	}, 1024, 1024, 3*time.Second)
+	if err != nil {
+		panic(err)
+	}
 
 	return r
 }

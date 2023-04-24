@@ -2,7 +2,6 @@ package gameapi
 
 import (
 	"context"
-	"net"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -14,7 +13,7 @@ import (
 type Session struct {
 	app *App
 
-	conn         net.Conn      // 网络连接
+	conn         NetConn       // 网络连接
 	closeOnce    sync.Once     // 关闭控制
 	closeFlag    int32         // 关闭标志
 	closeChan    chan struct{} // 关闭channel
@@ -45,7 +44,7 @@ type SessionCallback interface {
 }
 
 // NewSession 新建一个Session
-func NewSession(conn net.Conn, app *App) *Session {
+func NewSession(conn NetConn, app *App) *Session {
 	return &Session{
 		app:          app,
 		callback:     app,
@@ -55,11 +54,6 @@ func NewSession(conn net.Conn, app *App) *Session {
 		receiveChan:  make(chan Packet, app.Config.GetInt("ReceiveLimit")),
 		heartLimiter: rate.NewLimiter(rate.Every(time.Minute), app.Config.GetInt("HeartLimit")),
 	}
-}
-
-// GetConn 获取连接实例
-func (s *Session) GetConn() net.Conn {
-	return s.conn
 }
 
 // Close 关闭Session
@@ -183,9 +177,7 @@ func (s *Session) readLoop() {
 		default:
 		}
 
-		// 设置连接读取超时
-		s.conn.SetReadDeadline(time.Now().Add(time.Duration(s.app.Config.GetInt("ConnReadTimeout")) * time.Second))
-		p, err := Packing(s.conn)
+		p, err := s.conn.ReadPacket()
 		if err != nil {
 			return
 		}
@@ -212,8 +204,8 @@ func (s *Session) writeLoop() {
 			if s.IsClosed() {
 				return
 			}
-			s.conn.SetWriteDeadline(time.Now().Add(time.Duration(s.app.Config.GetInt("ConnWriteTimeout")) * time.Second))
-			if _, err := s.conn.Write(p.Serialize()); err != nil {
+
+			if err := s.conn.WritePacket(p); err != nil {
 				return
 			}
 		}

@@ -44,6 +44,14 @@ func NewDefaultPacket(buff []byte, opcode uint16) *DefaultPacket {
 	return p
 }
 
+// NewPacket 从一份数据字节中构造Packet
+func NewPacket(buff []byte) Packet {
+	p := new(DefaultPacket)
+	p.buff = buff
+
+	return p
+}
+
 // Serialize 序列化，输出完整的字符数组
 func (p *DefaultPacket) Serialize() []byte {
 	return p.buff

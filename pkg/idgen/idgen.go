@@ -19,3 +19,8 @@ func InitNode(instanceID int64) {
 func GenerateInt64() int64 {
 	return _node.Generate().Int64()
 }
+
+// GenerateString 创建一个string的ID
+func GenerateString() string {
+	return _node.Generate().String()
+}

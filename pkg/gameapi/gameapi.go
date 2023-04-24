@@ -2,11 +2,13 @@ package gameapi
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
@@ -14,7 +16,6 @@ import (
 	"github.com/trainking/goboot/pkg/etcdx"
 	"github.com/trainking/goboot/pkg/log"
 	"github.com/trainking/goboot/pkg/utils"
-	"github.com/xtaci/kcp-go"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -29,16 +30,15 @@ type (
 		boot.BaseInstance
 
 		nc             *nats.Conn            // NATS消息分发
-		listener       net.Listener          // 网络监听
+		listener       NetListener           // 网络监听
 		exitChan       chan struct{}         // 退出信号
 		waitGroup      sync.WaitGroup        // 等待携程控制
 		closeOnce      sync.Once             // 保证关闭只执行一次
 		serviceManager *etcdx.ServiceManager // etcd注册管理器
 
-		connectListener    Listener       // 会话建立时的连接监听
-		disconnectListener Listener       // 会话断开时的连接监听器
-		beforeMiddleware   Middleware     // 会话处理消息之前执行的监听器
-		creator            SessionCreator // 会话创建时，预处理的生成器
+		connectListener    Listener   // 会话建立时的连接监听
+		disconnectListener Listener   // 会话断开时的连接监听器
+		beforeMiddleware   Middleware // 会话处理消息之前执行的监听器
 
 		router map[uint16]Handler // 处理器映射
 
@@ -209,36 +209,47 @@ func (a *App) Init() (err error) {
 		}
 	}
 
+	var netConfig = NetConfig{
+		Addr:         a.Addr,
+		WriteTimeout: time.Duration(a.Config.GetInt("ConnWriteTimeout") * int(time.Second)),
+		ReadeTimeout: time.Duration(a.Config.GetInt("ConnReadTimeout") * int(time.Second)),
+	}
+
+	// 加载tls配置
+	tlsConfigMap := a.Config.GetStringMapString("TLS")
+	if len(tlsConfigMap) > 0 {
+		cert, err := tls.LoadX509KeyPair(tlsConfigMap["certfile"], tlsConfigMap["keyfile"])
+		if err != nil {
+			return err
+		}
+		netConfig.TLSConfig = &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		}
+	}
+
 	// 根据配置传输层协议
 	network := a.Config.GetString("Network")
 	switch network {
 	case "tcp":
-		a.listener, err = net.Listen("tcp", a.Addr)
+		a.listener, err = NewTcpNetListener(netConfig)
 		if err != nil {
 			return err
 		}
 	case "kcp":
-		a.listener, err = kcp.Listen(a.Addr)
+		a.listener, err = NewKcpNetListener(netConfig)
 		if err != nil {
 			return err
 		}
-
-		// 设置kcp连接参数
-		a.creator = func(c net.Conn, a *App) *Session {
-			kcpConn := c.(*kcp.UDPSession)
-			// 极速模式；普通模式参数为 0, 40, 0, 0
-			kcpConn.SetNoDelay(1, 10, 2, 1)
-			kcpConn.SetStreamMode(true)
-			kcpConn.SetWindowSize(4096, 4096)
-			kcpConn.SetReadBuffer(4 * 65536 * 1024)
-			kcpConn.SetWriteBuffer(4 * 65536 * 1024)
-			kcpConn.SetACKNoDelay(true)
-
-			return NewSession(c, a)
+	case "websocket":
+		netConfig.WebSocketPath = a.Config.GetString("WebsocketPath")
+		a.listener, err = NewWebSocketNetListener(netConfig)
+		if err != nil {
+			return err
 		}
 	default:
 		return errors.Wrap(ErrNoImplementNetwork, network)
 	}
+
 	// 监听广播的其他实例消息
 	go a.subscribePushUserMsg()
 
@@ -318,11 +329,7 @@ func (a *App) Start() error {
 		a.waitGroup.Add(1)
 		go func() {
 			// 处理连接数据
-			if a.creator != nil {
-				a.creator(conn, a).Run()
-			} else {
-				NewSession(conn, a).Run()
-			}
+			NewSession(conn, a).Run()
 			a.waitGroup.Done()
 		}()
 	}
