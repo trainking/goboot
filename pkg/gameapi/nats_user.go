@@ -2,6 +2,7 @@ package gameapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	"github.com/nats-io/nats.go"
@@ -10,12 +11,13 @@ import (
 
 const (
 	// 向NATS中push推送给其他玩家消息的键
-	NatsPushUserK = "GAME_PUSH_USER"
+	NatsPushUserK = `GAME_PUSH_USER:%s`
 )
 
 type (
 	// UserNats 向用户发送消息
 	UserNats struct {
+		serverName  string     // 服务器名
 		nc          *nats.Conn // NATS消息分发
 		receiveChan chan PushActorMessage
 		sub         *nats.Subscription
@@ -33,13 +35,13 @@ type (
 )
 
 // NewUserNats 创建一个向用户发送消息的nats
-func NewUserNats(natsUrl string) (*UserNats, error) {
+func NewUserNats(natsUrl string, serverName string) (*UserNats, error) {
 	nc, err := nats.Connect(natsUrl)
 	if err != nil {
 		return nil, err
 	}
 
-	return &UserNats{nc: nc, closeChan: make(chan struct{})}, nil
+	return &UserNats{nc: nc, serverName: serverName, closeChan: make(chan struct{})}, nil
 }
 
 // Puslish 发送用户消息
@@ -55,14 +57,14 @@ func (u *UserNats) Publish(userID int64, p Packet) error {
 		return err
 	}
 
-	return u.nc.Publish(NatsPushUserK, b)
+	return u.nc.Publish(fmt.Sprintf(NatsPushUserK, u.serverName), b)
 }
 
 // StartSubscribe 开始消费用户消息
-func (u *UserNats) StartSubscribe() error {
+func (u *UserNats) StartSubscribe(subLimit int) error {
 	u.receiveChan = make(chan PushActorMessage)
-	var subChan = make(chan *nats.Msg)
-	sub, err := u.nc.ChanSubscribe(NatsPushUserK, subChan)
+	var subChan = make(chan *nats.Msg, subLimit)
+	sub, err := u.nc.ChanSubscribe(fmt.Sprintf(NatsPushUserK, u.serverName), subChan)
 	if err != nil {
 		return err
 	}

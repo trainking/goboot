@@ -78,7 +78,7 @@ func New(name string, configPath string, addr string, instancdID int64) *App {
 		panic(err)
 	}
 
-	un, err := NewUserNats(v.GetString("NatsUrl"))
+	un, err := NewUserNats(v.GetString("NatsUrl"), name)
 	if err != nil {
 		panic(err)
 	}
@@ -244,8 +244,8 @@ func (a *App) Init() (err error) {
 
 // subscribePushUserMsg 订阅消费推送玩家的消息
 func (a *App) subscribePushUserMsg() {
-	// 开启消费
-	if err := a.un.StartSubscribe(); err != nil {
+	// 开启消费, 消费limit使用接收消息的一半
+	if err := a.un.StartSubscribe(a.Config.GetInt("ReceiveLimit") / 2); err != nil {
 		log.Errorf("StartSubscribe Error: %v", err)
 		return
 	}
