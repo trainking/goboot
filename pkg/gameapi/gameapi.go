@@ -31,7 +31,8 @@ type (
 
 		connectListener    Listener     // 会话建立时的连接监听
 		disconnectListener Listener     // 会话断开时的连接监听器
-		beforeMiddleware   []Middleware // 会话处理消息之前执行的监听器
+		beforeMiddleware   []Middleware // 会话处理消息之前执行的中间件
+		afterMiddleware    []Middleware // 会话处理消息之后执行的中间件
 
 		router map[uint16]Handler // 处理器映射
 
@@ -109,6 +110,11 @@ func (a *App) SetDisconnectListener(l Listener) {
 // SetBeforeMiddleware 设置消息处理前中间件
 func (a *App) AddBeforeMiddleware(m Middleware) {
 	a.beforeMiddleware = append(a.beforeMiddleware, m)
+}
+
+// AddAfterMiddleware 设置详细处理后的中间件
+func (a *App) AddAfterMiddleware(m Middleware) {
+	a.afterMiddleware = append(a.afterMiddleware, m)
 }
 
 // AddHandler 增加处理器
@@ -339,22 +345,33 @@ func (a *App) OnConnect(session *Session) bool {
 func (a *App) OnMessage(session *Session, p Packet) bool {
 	// 消息的分发
 	if h, ok := a.router[p.OpCode()]; ok {
-		ctx := NewDefaultContext(context.Background(), a, session, p.OpCode(), p.Body())
-		// 处理消息之前，中间件过滤
-		for _, m := range a.beforeMiddleware {
-			if !m.Condition(p.OpCode()) {
-				continue
-			}
-
-			if err := m.Do(ctx); err != nil {
-				log.Errorf("Middle %d is Error: %v", p.OpCode(), err)
-				return false
-			}
-		}
-
 		go func() {
+			ctx := NewDefaultContext(context.Background(), a, session, p.OpCode(), p.Body())
+			// 处理消息之前，中间件过滤
+			for _, m := range a.beforeMiddleware {
+				if !m.Condition(p.OpCode()) {
+					continue
+				}
+
+				if err := m.Do(ctx); err != nil {
+					log.Errorf("Middle %d is Error: %v", p.OpCode(), err)
+				}
+			}
+
+			// 处理消息
 			if err := h(ctx); err != nil {
 				log.Errorf("Handler %d Error: %s ", p.OpCode(), err)
+			}
+
+			// 处理之后，中间件操作
+			for _, m := range a.afterMiddleware {
+				if !m.Condition(p.OpCode()) {
+					continue
+				}
+
+				if err := m.Do(ctx); err != nil {
+					log.Errorf("Middle %d is Error: %v", p.OpCode(), err)
+				}
 			}
 		}()
 	} else {
