@@ -3,7 +3,6 @@ package gameapi
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"net"
 	"reflect"
 	"sync"
@@ -23,6 +22,7 @@ type (
 	App struct {
 		boot.BaseInstance
 
+		gd             GameMetaData          // 服务器元数据
 		un             *UserNats             // 用户消息分发
 		listener       NetListener           // 网络监听
 		exitChan       chan struct{}         // 退出信号
@@ -85,6 +85,10 @@ func New(name string, configPath string, addr string, instancdID int64) *App {
 
 	app := new(App)
 	app.Name = name
+	app.gd = GameMetaData{
+		ID:    instancdID,
+		State: StateIdle,
+	}
 	app.un = un
 	app.Config = v
 	app.Addr = addr
@@ -208,6 +212,7 @@ func (a *App) Init() (err error) {
 		netConfig.TLSConfig = &tls.Config{
 			Certificates: []tls.Certificate{cert},
 		}
+		a.gd.UseTLS = true
 	}
 
 	// 根据配置传输层协议
@@ -232,12 +237,15 @@ func (a *App) Init() (err error) {
 	default:
 		return errors.Wrap(ErrNoImplementNetwork, network)
 	}
+	a.gd.Network = network
 
 	// 监听广播的其他实例消息
 	go a.subscribePushUserMsg()
 
 	// 注册服务
-	a.registerEtcd()
+	if err := a.registerEtcd(); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -266,22 +274,6 @@ func (a *App) subscribePushUserMsg() {
 			}
 		}
 	}
-}
-
-// registerEtcd 注册到Etcd中
-func (a *App) registerEtcd() error {
-	xClient, err := etcdx.New(a.Config.GetStringSlice("Etcd"))
-	if err != nil {
-		return err
-	}
-
-	a.serviceManager, err = etcdx.NewServiceManager(xClient, fmt.Sprintf("%s/%s", a.Config.GetString("Prefix"), a.Name), 15, 10)
-	if err != nil {
-		return err
-	}
-
-	err = a.serviceManager.Register(a.Addr)
-	return err
 }
 
 // Start 启动服务
