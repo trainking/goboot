@@ -347,12 +347,14 @@ func (a *App) OnMessage(session *Session, p Packet) bool {
 
 				if err := m.Do(ctx); err != nil {
 					log.Errorf("Middle %d is Error: %v", p.OpCode(), err)
+					continue
 				}
 			}
 
 			// 处理消息
 			if err := h(ctx); err != nil {
 				log.Errorf("Handler %d Error: %s ", p.OpCode(), err)
+				return
 			}
 
 			// 处理之后，中间件操作
@@ -363,6 +365,7 @@ func (a *App) OnMessage(session *Session, p Packet) bool {
 
 				if err := m.Do(ctx); err != nil {
 					log.Errorf("Middle %d is Error: %v", p.OpCode(), err)
+					continue
 				}
 			}
 		}()

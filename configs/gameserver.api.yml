@@ -2,11 +2,11 @@
 Prefix: "/gameserver"
 # 服务注册的Etcd地址
 Etcd:
-  - "192.168.1.14:2379"
+  - "192.168.1.9:2379"
 # NATS的地址
-NatsUrl: "nats://192.168.1.14:4222"
+NatsUrl: "nats://192.168.1.9:4222"
 # 传输层协议，tcp, kcp
-Network: "websocket"
+Network: "tcp"
 # websocket时使用升级路径
 WebsocketPath: "/ws"
 # 每个连接的读超时(等于客户端心跳的超时)，秒为单位
@@ -23,6 +23,6 @@ ReceiveLimit: 1024
 HeartLimit: 100
 
 # 是否开启TLS
-TLS:
-  CertFile: "../ssldata/server.cert"
-  KeyFile: "../ssldata/server.key"
+# TLS:
+#   CertFile: "../ssldata/server.cert"
+#   KeyFile: "../ssldata/server.key"
