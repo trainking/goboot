@@ -87,7 +87,7 @@ func New(name string, configPath string, addr string, instancdID int64) *App {
 	app.Name = name
 	app.gd = GameMetaData{
 		ID:    instancdID,
-		State: StateIdle,
+		State: StateZero,
 	}
 	app.un = un
 	app.Config = v
