@@ -27,6 +27,9 @@ type (
 		// SendActor 向其他玩家发送消息
 		SendActor(userID int64, opcode interface{}, msg proto.Message) error
 
+		// SendAllActor 向所有玩家发送消息
+		SendAllActor(opcode interface{}, msg proto.Message) error
+
 		// Valid 验证玩家成功，传入用户ID
 		Valid(userID int64)
 
@@ -94,6 +97,15 @@ func (c *DefaultContext) SendActor(userID int64, opcode interface{}, msg proto.M
 		return ErrWrongOpCode
 	}
 	return c.a.SendActor(userID, _op, msg)
+}
+
+// SendAllActor 向所有玩家发送消息
+func (c *DefaultContext) SendAllActor(opcode interface{}, msg proto.Message) error {
+	_op := opcodeChange(opcode)
+	if _op == 0 {
+		return ErrWrongOpCode
+	}
+	return c.a.SendAllActor(_op, msg)
 }
 
 // Valid 验证成功
