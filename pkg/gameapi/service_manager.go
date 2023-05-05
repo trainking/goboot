@@ -43,3 +43,13 @@ func (a *App) registerEtcd() error {
 	err = a.serviceManager.Register(a.Addr, a.gd)
 	return err
 }
+
+// UpdateGdState 修改服务状态
+func (a *App) UpdateGdState(state int) error {
+	if a.gd.State == state {
+		return nil
+	}
+
+	a.gd.State = state
+	return a.serviceManager.PushEndpoint(a.Addr, a.gd)
+}

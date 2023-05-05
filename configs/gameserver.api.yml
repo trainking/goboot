@@ -13,6 +13,8 @@ WebsocketPath: "/ws"
 ConnReadTimeout: 10
 # 每个连接的写超时，秒为单位
 ConnWriteTimeout: 5
+# 最大连接数
+ConnMax: 1000
 # 连接成功后，多久未验证身份，则断开，秒为单位
 ValidTimeout: 10
 # 最大发送消息包大小
