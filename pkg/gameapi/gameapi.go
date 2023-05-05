@@ -350,6 +350,7 @@ func (a *App) Stop() {
 	a.closeOnce.Do(func() {
 		close(a.exitChan)
 		a.listener.Close()
+		a.serviceManager.Destory(a.Addr)
 	})
 
 	// 等待所有携程执行完

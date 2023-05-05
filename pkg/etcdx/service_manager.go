@@ -87,6 +87,26 @@ func (s *ServiceManager) Register(addr string, metadate ...interface{}) error {
 	return s.PushEndpoint(addr, _metadata)
 }
 
+// Watch 检查数据的变更
+func (s *ServiceManager) Watch(addr string, h func(key string, ep endpoints.Endpoint)) error {
+	wChan, err := s.em.NewWatchChannel(s.ctx)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		for u := range wChan {
+			for _, ud := range u {
+				if ud.Endpoint.Addr == addr {
+					h(ud.Key, ud.Endpoint)
+				}
+			}
+		}
+	}()
+
+	return nil
+}
+
 // PushEndpoint push节点数据
 func (s *ServiceManager) PushEndpoint(addr string, metadata interface{}) error {
 	ep := endpoints.Endpoint{
