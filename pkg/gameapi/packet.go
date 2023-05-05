@@ -3,12 +3,21 @@ package gameapi
 import (
 	"encoding/binary"
 	"io"
+	"sync"
 
 	"google.golang.org/protobuf/proto"
 )
 
 // HeartPacket 默认使用0号协议作为心跳包的协议
-var HeartPacket Packet = NewDefaultPacket(nil, 0)
+var (
+	HeartPacket Packet = NewDefaultPacket(nil, 0)
+
+	DefaultPacketPool = sync.Pool{
+		New: func() interface{} {
+			return new(DefaultPacket)
+		},
+	}
+)
 
 // Packet 包接口
 type Packet interface {
@@ -23,6 +32,9 @@ type Packet interface {
 
 	// Body 获取完整body
 	Body() []byte
+
+	// Free 释放空间
+	Free()
 }
 
 // DefaultPacket 基于Protobuffer的包协议
@@ -32,7 +44,7 @@ type DefaultPacket struct {
 
 // NewPbPacket 新建一个pb的Packet
 func NewDefaultPacket(buff []byte, opcode uint16) *DefaultPacket {
-	p := new(DefaultPacket)
+	p := DefaultPacketPool.Get().(*DefaultPacket)
 
 	p.buff = make([]byte, 4+len(buff))
 	binary.BigEndian.PutUint16(p.buff[0:2], uint16(len(buff)))
@@ -46,7 +58,7 @@ func NewDefaultPacket(buff []byte, opcode uint16) *DefaultPacket {
 
 // NewPacket 从一份数据字节中构造Packet
 func NewPacket(buff []byte) Packet {
-	p := new(DefaultPacket)
+	p := DefaultPacketPool.Get().(*DefaultPacket)
 	p.buff = buff
 
 	return p
@@ -70,6 +82,14 @@ func (p *DefaultPacket) BodyLen() uint16 {
 // Body 读取body所有字符
 func (p *DefaultPacket) Body() []byte {
 	return p.buff[4:]
+}
+
+// Free 释放空间
+func (p *DefaultPacket) Free() {
+	p.buff = p.buff[:0]
+
+	// 回到池中
+	DefaultPacketPool.Put(p)
 }
 
 // Packing 从io流中读取出包

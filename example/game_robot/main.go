@@ -14,7 +14,7 @@ func main() {
 
 	r1 := robot.NewTLS("websocket", "192.168.1.30:6001", "example.com", "../ssldata/server.cert")
 	startRobot(r1, "1", "123456")
-	r2 := robot.NewTLS("websocket", "192.168.1.30:6001", "example.com", "../ssldata/server.cert")
+	r2 := robot.NewTLS("websocket", "192.168.1.30:6002", "example.com", "../ssldata/server.cert")
 	startRobot(r2, "2", "123456")
 
 	r2.Say(1, "2 say hello")

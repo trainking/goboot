@@ -22,13 +22,19 @@ type (
 		Session() *Session
 
 		// Send 发送消息到玩家
-		Send(opcode uint16, msg proto.Message) error
+		Send(opcode interface{}, msg proto.Message) error
 
 		// SendActor 向其他玩家发送消息
-		SendActor(userID int64, opcode uint16, msg proto.Message) error
+		SendActor(userID int64, opcode interface{}, msg proto.Message) error
+
+		// SendAllActor 向所有玩家发送消息
+		SendAllActor(opcode interface{}, msg proto.Message) error
 
 		// Valid 验证玩家成功，传入用户ID
 		Valid(userID int64)
+
+		// GetOpCode 获取此次请求的opcode
+		GetOpCode() uint16
 
 		// GetRequestID 获得请求ID
 		GetRequestID() string
@@ -39,18 +45,20 @@ type (
 		a         *App
 		session   *Session
 		ctx       context.Context
+		opcode    uint16
 		body      []byte
 		requestID string
 	}
 )
 
 // NewDefaultContext
-func NewDefaultContext(ctx context.Context, a *App, session *Session, body []byte) Context {
+func NewDefaultContext(ctx context.Context, a *App, session *Session, opcode uint16, body []byte) Context {
 	id := uuid.New()
 	return &DefaultContext{
 		a:         a,
 		session:   session,
 		ctx:       ctx,
+		opcode:    opcode,
 		body:      body,
 		requestID: id.String(),
 	}
@@ -69,8 +77,12 @@ func (c *DefaultContext) Session() *Session {
 }
 
 // WritePbPacket 写入Protobuf的包
-func (c *DefaultContext) Send(opcode uint16, msg proto.Message) error {
-	p, err := CretaePbPacket(opcode, msg)
+func (c *DefaultContext) Send(opcode interface{}, msg proto.Message) error {
+	_op := opcodeChange(opcode)
+	if _op == 0 {
+		return ErrWrongOpCode
+	}
+	p, err := CretaePbPacket(_op, msg)
 	if err != nil {
 		return err
 	}
@@ -79,8 +91,21 @@ func (c *DefaultContext) Send(opcode uint16, msg proto.Message) error {
 }
 
 // SendActor 向指定玩家发送消息
-func (c *DefaultContext) SendActor(userID int64, opcode uint16, msg proto.Message) error {
-	return c.a.SendActor(userID, opcode, msg)
+func (c *DefaultContext) SendActor(userID int64, opcode interface{}, msg proto.Message) error {
+	_op := opcodeChange(opcode)
+	if _op == 0 {
+		return ErrWrongOpCode
+	}
+	return c.a.SendActor(userID, _op, msg)
+}
+
+// SendAllActor 向所有玩家发送消息
+func (c *DefaultContext) SendAllActor(opcode interface{}, msg proto.Message) error {
+	_op := opcodeChange(opcode)
+	if _op == 0 {
+		return ErrWrongOpCode
+	}
+	return c.a.SendAllActor(_op, msg)
 }
 
 // Valid 验证成功
@@ -88,6 +113,11 @@ func (c *DefaultContext) Valid(userID int64) {
 	c.a.AddSession(userID, c.session)
 	c.session.valid()
 	c.session.SetUserID(userID)
+}
+
+// GetOpCode 获取此次处理的opcode
+func (c *DefaultContext) GetOpCode() uint16 {
+	return c.opcode
 }
 
 // GetRequestID 获得请求ID

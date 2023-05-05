@@ -3,14 +3,12 @@ package gameapi
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
-	"fmt"
 	"net"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
 	"github.com/trainking/goboot/pkg/boot"
 	"github.com/trainking/goboot/pkg/etcdx"
@@ -19,26 +17,23 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-const (
-	// 向NATS中push推送给其他玩家消息的键
-	NatsPushUserK = "GAME_PUSH_USER"
-)
-
 type (
 	// App 游戏服务器实现
 	App struct {
 		boot.BaseInstance
 
-		nc             *nats.Conn            // NATS消息分发
+		gd             GameMetaData          // 服务器元数据
+		un             *UserNats             // 用户消息分发
 		listener       NetListener           // 网络监听
 		exitChan       chan struct{}         // 退出信号
 		waitGroup      sync.WaitGroup        // 等待携程控制
 		closeOnce      sync.Once             // 保证关闭只执行一次
 		serviceManager *etcdx.ServiceManager // etcd注册管理器
 
-		connectListener    Listener   // 会话建立时的连接监听
-		disconnectListener Listener   // 会话断开时的连接监听器
-		beforeMiddleware   Middleware // 会话处理消息之前执行的监听器
+		connectListener    Listener     // 会话建立时的连接监听
+		disconnectListener Listener     // 会话断开时的连接监听器
+		beforeMiddleware   []Middleware // 会话处理消息之前执行的中间件
+		afterMiddleware    []Middleware // 会话处理消息之后执行的中间件
 
 		router map[uint16]Handler // 处理器映射
 
@@ -51,7 +46,12 @@ type (
 	}
 
 	// Middleware 中间件处理
-	Middleware func(*Session, Packet) error
+	Middleware struct {
+		// Condition 是否要处理的opcode
+		Condition func(uint16) bool
+		// Do 处理执行
+		Do func(Context) error
+	}
 
 	// Listener 监听器
 	Listener func(*Session) error
@@ -61,9 +61,6 @@ type (
 
 		// 初始化模块
 		Init(app *App)
-
-		// 模块的分组路由
-		Group() map[uint16]Handler
 	}
 
 	// Handler 处理类型
@@ -71,13 +68,6 @@ type (
 
 	// SessionCreator session创建生成器，做一些预处理
 	SessionCreator func(net.Conn, *App) *Session
-
-	// PushActorMessage 发送消息给远程玩家
-	PushActorMessage struct {
-		UserID int64  `json:"user_id"`
-		OpCode uint16 `json:"opcode"`
-		Msg    []byte `json:"msg"`
-	}
 )
 
 // New 创建一个游戏服务器接口实例
@@ -88,14 +78,18 @@ func New(name string, configPath string, addr string, instancdID int64) *App {
 		panic(err)
 	}
 
-	nc, err := nats.Connect(v.GetString("NatsUrl"))
+	un, err := NewUserNats(v.GetString("NatsUrl"), name)
 	if err != nil {
 		panic(err)
 	}
 
 	app := new(App)
 	app.Name = name
-	app.nc = nc
+	app.gd = GameMetaData{
+		ID:    instancdID,
+		State: StateZero,
+	}
+	app.un = un
 	app.Config = v
 	app.Addr = addr
 	app.IntanceID = instancdID
@@ -116,13 +110,22 @@ func (a *App) SetDisconnectListener(l Listener) {
 }
 
 // SetBeforeMiddleware 设置消息处理前中间件
-func (a *App) SetBeforeMiddleware(m Middleware) {
-	a.beforeMiddleware = m
+func (a *App) AddBeforeMiddleware(m Middleware) {
+	a.beforeMiddleware = append(a.beforeMiddleware, m)
+}
+
+// AddAfterMiddleware 设置详细处理后的中间件
+func (a *App) AddAfterMiddleware(m Middleware) {
+	a.afterMiddleware = append(a.afterMiddleware, m)
 }
 
 // AddHandler 增加处理器
-func (a *App) AddHandler(opcode uint16, h Handler) {
-	a.router[opcode] = h
+func (a *App) AddHandler(opcode interface{}, h Handler) {
+	_op := opcodeChange(opcode)
+	if _op == 0 {
+		return
+	}
+	a.router[_op] = h
 }
 
 // AddModule 增加所有模块
@@ -159,6 +162,16 @@ func (a *App) SendActor(userID int64, opcode uint16, msg proto.Message) error {
 	return err
 }
 
+// SendAllActor 向所有玩家发送消息
+func (a *App) SendAllActor(opcode uint16, msg proto.Message) error {
+	p, err := CretaePbPacket(opcode, msg)
+	if err != nil {
+		return err
+	}
+
+	return a.sendActorPush(-1, p)
+}
+
 // sendActorLocation 发送消息给本地实例
 func (a *App) sendActorLocation(userID int64, p Packet) error {
 	a.sessionMu.RLock()
@@ -177,20 +190,28 @@ func (a *App) sendActorLocation(userID int64, p Packet) error {
 	return ErrUserNoIn
 }
 
+// sendAllActorLocation 像所有的本地玩家发送消息
+func (a *App) sendAllActorLocation(p Packet) error {
+	a.sessionMu.RLock()
+	defer a.sessionMu.RUnlock()
+	for userID := range a.sessions {
+		session := a.sessions[userID]
+		if !session.IsClosed() {
+			// 如果定义handler，必须发送给handler处理
+			if _, ok := a.router[p.OpCode()]; ok {
+				session.receiveChan <- p
+				return nil
+			}
+			return session.WritePacket(p)
+		}
+	}
+
+	return ErrUserNoIn
+}
+
 // sendActorPush 发送消息给远程实例
 func (a *App) sendActorPush(userID int64, p Packet) error {
-	pushMsg := PushActorMessage{
-		UserID: userID,
-		OpCode: p.OpCode(),
-		Msg:    p.Body(),
-	}
-
-	b, err := json.Marshal(pushMsg)
-	if err != nil {
-		return err
-	}
-
-	return a.nc.Publish(NatsPushUserK, b)
+	return a.un.Publish(userID, p)
 }
 
 // Init 初始化服务
@@ -202,11 +223,6 @@ func (a *App) Init() (err error) {
 	// 初始化各个模块
 	for _, m := range a.modules {
 		m.Init(a)
-
-		// 加入路由映射
-		for k, v := range m.Group() {
-			a.AddHandler(k, v)
-		}
 	}
 
 	var netConfig = NetConfig{
@@ -225,6 +241,7 @@ func (a *App) Init() (err error) {
 		netConfig.TLSConfig = &tls.Config{
 			Certificates: []tls.Certificate{cert},
 		}
+		a.gd.UseTLS = true
 	}
 
 	// 根据配置传输层协议
@@ -249,25 +266,28 @@ func (a *App) Init() (err error) {
 	default:
 		return errors.Wrap(ErrNoImplementNetwork, network)
 	}
+	a.gd.Network = network
 
 	// 监听广播的其他实例消息
 	go a.subscribePushUserMsg()
 
 	// 注册服务
-	a.registerEtcd()
+	if err := a.registerEtcd(); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 // subscribePushUserMsg 订阅消费推送玩家的消息
 func (a *App) subscribePushUserMsg() {
-	var subChan = make(chan *nats.Msg)
-	sub, err := a.nc.ChanSubscribe(NatsPushUserK, subChan)
-	if err != nil {
-		panic(err)
+	// 开启消费, 消费limit使用接收消息的一半
+	if err := a.un.StartSubscribe(a.Config.GetInt("ReceiveLimit") / 2); err != nil {
+		log.Errorf("StartSubscribe Error: %v", err)
+		return
 	}
 	defer func() {
-		sub.Unsubscribe()
+		a.un.Close()
 		a.Stop()
 	}()
 
@@ -275,36 +295,25 @@ func (a *App) subscribePushUserMsg() {
 		select {
 		case <-a.exitChan:
 			return
-		case m := <-subChan:
-			var msg PushActorMessage
-			if err := json.Unmarshal(m.Data, &msg); err != nil {
-				log.Errorf("PushActorMessage Unmarshal Error: %v", err)
-				return
+		case m := <-a.un.Consume():
+			p := NewDefaultPacket(m.Msg, m.OpCode)
+
+			if m.UserID != -1 {
+				// 向特定玩家发送消息
+				if err := a.sendActorLocation(m.UserID, p); err != nil && err != ErrUserNoIn {
+					log.Errorf("PushActorMessage sendActorLocation Error: %v", err)
+					return
+				}
+			} else {
+				// 向所有玩家广播消息
+				if err := a.sendAllActorLocation(p); err != nil && err != ErrUserNoIn {
+					log.Errorf("PushActorMessage sendAllActorLocation Error: %v", err)
+					return
+				}
 			}
 
-			p := NewDefaultPacket(msg.Msg, msg.OpCode)
-			if err := a.sendActorLocation(msg.UserID, p); err != nil && err != ErrUserNoIn {
-				log.Errorf("PushActorMessage sendActorLocation Error: %v", err)
-				return
-			}
 		}
 	}
-}
-
-// registerEtcd 注册到Etcd中
-func (a *App) registerEtcd() error {
-	xClient, err := etcdx.New(a.Config.GetStringSlice("Etcd"))
-	if err != nil {
-		return err
-	}
-
-	a.serviceManager, err = etcdx.NewServiceManager(xClient, fmt.Sprintf("%s/%s", a.Config.GetString("Prefix"), a.Name), 15, 10)
-	if err != nil {
-		return err
-	}
-
-	err = a.serviceManager.Register(a.Addr)
-	return err
 }
 
 // Start 启动服务
@@ -363,18 +372,41 @@ func (a *App) OnConnect(session *Session) bool {
 
 // OnMessage 消息处理
 func (a *App) OnMessage(session *Session, p Packet) bool {
-	// 处理消息之前的预处理
-	if a.beforeMiddleware != nil {
-		if err := a.beforeMiddleware(session, p); err != nil {
-			log.Errorf("beforeMiddleware Error: %v", err)
-			return false
-		}
-	}
 	// 消息的分发
 	if h, ok := a.router[p.OpCode()]; ok {
 		go func() {
-			if err := h(NewDefaultContext(context.Background(), a, session, p.Body())); err != nil {
+			// 释放Packet
+			defer p.Free()
+
+			ctx := NewDefaultContext(context.Background(), a, session, p.OpCode(), p.Body())
+			// 处理消息之前，中间件过滤
+			for _, m := range a.beforeMiddleware {
+				if !m.Condition(p.OpCode()) {
+					continue
+				}
+
+				if err := m.Do(ctx); err != nil {
+					log.Errorf("Middle %d is Error: %v", p.OpCode(), err)
+					continue
+				}
+			}
+
+			// 处理消息
+			if err := h(ctx); err != nil {
 				log.Errorf("Handler %d Error: %s ", p.OpCode(), err)
+				return
+			}
+
+			// 处理之后，中间件操作
+			for _, m := range a.afterMiddleware {
+				if !m.Condition(p.OpCode()) {
+					continue
+				}
+
+				if err := m.Do(ctx); err != nil {
+					log.Errorf("Middle %d is Error: %v", p.OpCode(), err)
+					continue
+				}
 			}
 		}()
 	} else {
@@ -391,4 +423,18 @@ func (a *App) OnDisConnect(sesssion *Session) {
 	if a.disconnectListener != nil {
 		a.disconnectListener(sesssion)
 	}
+}
+
+// opcodeChange opcode的类型转换
+func opcodeChange(opcode interface{}) uint16 {
+	var _op uint16
+	switch reflect.TypeOf(opcode).Kind() {
+	case reflect.Int32, reflect.Int, reflect.Int64:
+		_op = uint16(reflect.ValueOf(opcode).Int())
+	case reflect.Uint, reflect.Uint16, reflect.Uint32:
+		_op = uint16(reflect.ValueOf(opcode).Uint())
+	default:
+		log.Errorf("wrong opcode %v kind: %v", opcode, reflect.TypeOf(opcode).Kind())
+	}
+	return _op
 }

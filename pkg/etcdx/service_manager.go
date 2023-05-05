@@ -22,9 +22,10 @@ type ServiceManager struct {
 	em      endpoints.Manager
 	xClient *ClientX
 
-	target   string // 服务名
-	leaseTTL int64  // 租约的过期时间
-	heartT   int    // 心跳维持时间,单位秒
+	leaseID  clientv3.LeaseID // 租约ID
+	target   string           // 服务名
+	leaseTTL int64            // 租约的过期时间
+	heartT   int              // 心跳维持时间,单位秒
 	ctx      context.Context
 	cancel   context.CancelFunc
 }
@@ -56,14 +57,11 @@ func (s *ServiceManager) Register(addr string, metadate ...interface{}) error {
 	// 设置Context控制租约过期
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 
-	ep := endpoints.Endpoint{
-		Addr: addr,
-	}
-
+	var _metadata interface{}
 	if len(metadate) > 0 {
-		ep.Metadata = metadate[0]
+		_metadata = metadate[0]
 	} else {
-		ep.Metadata = DefaultMetaData
+		_metadata = DefaultMetaData
 	}
 
 	lease := clientv3.NewLease(s.xClient.client)
@@ -84,7 +82,18 @@ func (s *ServiceManager) Register(addr string, metadate ...interface{}) error {
 		}
 	}()
 
-	return s.em.AddEndpoint(s.xClient.client.Ctx(), s.target+"/"+addr, ep, clientv3.WithLease(leaseResp.ID))
+	s.leaseID = leaseResp.ID
+
+	return s.PushEndpoint(addr, _metadata)
+}
+
+// PushEndpoint push节点数据
+func (s *ServiceManager) PushEndpoint(addr string, metadata interface{}) error {
+	ep := endpoints.Endpoint{
+		Addr:     addr,
+		Metadata: metadata,
+	}
+	return s.em.AddEndpoint(s.xClient.client.Ctx(), s.target+"/"+addr, ep, clientv3.WithLease(s.leaseID))
 }
 
 // Destory 销毁
