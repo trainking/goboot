@@ -1,9 +1,11 @@
 package gameapi
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/trainking/goboot/pkg/etcdx"
+	"go.etcd.io/etcd/client/v3/naming/endpoints"
 )
 
 const (
@@ -40,7 +42,16 @@ func (a *App) registerEtcd() error {
 		return err
 	}
 
+	// 注册到服务中
 	err = a.serviceManager.Register(a.Addr, a.gd)
+	if err != nil {
+		return err
+	}
+	// 监听值的变更
+	err = a.serviceManager.Watch(a.Addr, func(key string, ep endpoints.Endpoint) {
+		b, _ := json.Marshal(ep.Metadata)
+		json.Unmarshal(b, &a.gd)
+	})
 	return err
 }
 
