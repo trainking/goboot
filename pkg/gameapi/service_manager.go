@@ -67,3 +67,8 @@ func (a *App) UpdateGdState(state int) error {
 	a.gd.State = state
 	return a.serviceManager.PushEndpoint(a.Addr, a.gd)
 }
+
+// GetGd 获取此服务的元数据
+func (a *App) GetGd() GameMetaData {
+	return a.gd
+}
