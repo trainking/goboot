@@ -88,7 +88,7 @@ func (s *ServiceManager) Register(addr string, metadate ...interface{}) error {
 }
 
 // Watch 检查数据的变更
-func (s *ServiceManager) Watch(addr string, h func(key string, ep endpoints.Endpoint)) error {
+func (s *ServiceManager) Watch(h func(key string, ep endpoints.Endpoint)) error {
 	wChan, err := s.em.NewWatchChannel(s.ctx)
 	if err != nil {
 		return err
@@ -97,9 +97,7 @@ func (s *ServiceManager) Watch(addr string, h func(key string, ep endpoints.Endp
 	go func() {
 		for u := range wChan {
 			for _, ud := range u {
-				if ud.Endpoint.Addr == addr {
-					h(ud.Key, ud.Endpoint)
-				}
+				h(ud.Key, ud.Endpoint)
 			}
 		}
 	}()
