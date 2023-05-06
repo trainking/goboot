@@ -111,7 +111,6 @@ func (a *App) AddGroup(g Group) {
 // AddModule adds a module to the application.
 func (a *App) AddModule(m Module) {
 	a.modeules = append(a.modeules, m)
-	a.AddGroup(m.Group())
 }
 
 // Use adds a middleware to the application.
@@ -157,6 +156,7 @@ func (a *App) Init() error {
 	// Init各个模块
 	for _, m := range a.modeules {
 		m.Init(a)
+		a.AddGroup(m.Group())
 	}
 
 	return nil
