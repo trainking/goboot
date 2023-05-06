@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/trainking/goboot/pkg/log"
 	"github.com/xtaci/kcp-go"
 
 	"github.com/gorilla/websocket"
@@ -233,14 +234,14 @@ func NewWebSocketNetListener(config NetConfig) (NetListener, error) {
 		server.TLSConfig = config.TLSConfig
 		go func() {
 			if err := server.ListenAndServeTLS("", ""); err != nil {
-				panic(err)
+				log.Errorf("Websocket ListenAndServeTLS Eroor: %s", err)
 			}
 		}()
 
 	} else {
 		go func() {
 			if err := server.ListenAndServe(); err != nil {
-				panic(err)
+				log.Errorf("Websocket ListenAndServe Eroor: %s", err)
 			}
 		}()
 	}
@@ -302,5 +303,7 @@ func (w *WebSocketNetConn) WritePacket(p Packet) error {
 
 // Close 关闭连接
 func (w *WebSocketNetConn) Close() {
-	w.conn.Close()
+	if w.conn != nil {
+		w.conn.Close()
+	}
 }

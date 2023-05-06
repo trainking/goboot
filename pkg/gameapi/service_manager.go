@@ -18,11 +18,12 @@ const (
 
 type (
 	GameMetaData struct {
-		ID      int64  `json:"id"`      // 实例ID
-		Network string `json:"network"` // 传输协议
-		UseTLS  bool   `json:"use_tls"` // 是否启用TLS
-		Fuse    bool   `json:"fuse"`    // 熔断开关，true为开启，熔断状态下，服务不接受新连接，等待服务器降到0
-		State   int    `json:"state"`   // 状态
+		ID       int64  `json:"id"`       // 实例ID
+		Network  string `json:"network"`  // 传输协议
+		UseTLS   bool   `json:"use_tls"`  // 是否启用TLS
+		Fuse     bool   `json:"fuse"`     // 熔断开关，true为开启，熔断状态下，服务不接受新连接，等待服务器降到0
+		State    int    `json:"state"`    // 状态
+		Password string `json:"password"` // 该服务加密使用的密码
 	}
 )
 
@@ -48,9 +49,11 @@ func (a *App) registerEtcd() error {
 		return err
 	}
 	// 监听值的变更
-	err = a.serviceManager.Watch(a.Addr, func(key string, ep endpoints.Endpoint) {
-		b, _ := json.Marshal(ep.Metadata)
-		json.Unmarshal(b, &a.gd)
+	err = a.serviceManager.Watch(func(key string, ep endpoints.Endpoint) {
+		if ep.Addr == a.Addr {
+			b, _ := json.Marshal(ep.Metadata)
+			json.Unmarshal(b, &a.gd)
+		}
 	})
 	return err
 }

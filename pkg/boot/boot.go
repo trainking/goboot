@@ -36,10 +36,10 @@ func BootServe(instance Instance) error {
 		if e != nil {
 			log.Errorf("BootServe unknow error: %v", e)
 		}
+		instance.Stop()
 	}()
 
 	if err = instance.Start(); err != nil {
-		instance.Stop()
 		return err
 	}
 
