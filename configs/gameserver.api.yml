@@ -23,6 +23,8 @@ SendLimit: 1024
 ReceiveLimit: 1024
 # 心跳包限制数量, 每分钟不能超过的数量
 HeartLimit: 100
+# 服务加密使用的密码
+Password: "66014775009e4106"
 
 # 是否开启TLS
 # TLS:

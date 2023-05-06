@@ -39,8 +39,12 @@ type MetaData struct {
 func NewServiceManager(xClient *ClientX, target string, leaseTTl int64, heartT int) (*ServiceManager, error) {
 	target = strings.TrimRight(target, "/")
 
+	// 设置Context控制租约过期
+	ctx, cancel := context.WithCancel(context.Background())
+
 	em, err := endpoints.NewManager(xClient.client, target)
 	if err != nil {
+		cancel()
 		return nil, err
 	}
 	return &ServiceManager{
@@ -49,14 +53,13 @@ func NewServiceManager(xClient *ClientX, target string, leaseTTl int64, heartT i
 		target:   target,
 		leaseTTL: leaseTTl,
 		heartT:   heartT,
+		ctx:      ctx,
+		cancel:   cancel,
 	}, nil
 }
 
 // Register 注册到节点
 func (s *ServiceManager) Register(addr string, metadate ...interface{}) error {
-	// 设置Context控制租约过期
-	s.ctx, s.cancel = context.WithCancel(context.Background())
-
 	var _metadata interface{}
 	if len(metadate) > 0 {
 		_metadata = metadate[0]
@@ -85,6 +88,29 @@ func (s *ServiceManager) Register(addr string, metadate ...interface{}) error {
 	s.leaseID = leaseResp.ID
 
 	return s.PushEndpoint(addr, _metadata)
+}
+
+// Watch 检查数据的变更
+func (s *ServiceManager) Watch(h func(key string, ep endpoints.Endpoint)) error {
+	wChan, err := s.em.NewWatchChannel(s.ctx)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		for u := range wChan {
+			for _, ud := range u {
+				h(ud.Key, ud.Endpoint)
+			}
+		}
+	}()
+
+	return nil
+}
+
+// List 获取当前target的所有节点
+func (s *ServiceManager) List() (map[string]endpoints.Endpoint, error) {
+	return s.em.List(s.ctx)
 }
 
 // PushEndpoint push节点数据

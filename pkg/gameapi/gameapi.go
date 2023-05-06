@@ -86,8 +86,9 @@ func New(name string, configPath string, addr string, instancdID int64) *App {
 	app := new(App)
 	app.Name = name
 	app.gd = GameMetaData{
-		ID:    instancdID,
-		State: StateZero,
+		ID:       instancdID,
+		State:    StateZero,
+		Password: v.GetString("Password"),
 	}
 	app.un = un
 	app.Config = v
@@ -350,6 +351,7 @@ func (a *App) Stop() {
 	a.closeOnce.Do(func() {
 		close(a.exitChan)
 		a.listener.Close()
+		a.serviceManager.Destory(a.Addr)
 	})
 
 	// 等待所有携程执行完
