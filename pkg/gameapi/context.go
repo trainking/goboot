@@ -30,6 +30,12 @@ type (
 		// SendAllActor 向所有玩家发送消息
 		SendAllActor(opcode interface{}, msg proto.Message) error
 
+		// SendActorLocation 向本地其他玩家发送Actor
+		SendActorLocation(userID int64, opcode interface{}, msg proto.Message) error
+
+		// SendActorPush 向远程玩家发送Actor
+		SendActorPush(userID int64, opcode interface{}, msg proto.Message) error
+
 		// Valid 验证玩家成功，传入用户ID
 		Valid(userID int64)
 
@@ -106,6 +112,36 @@ func (c *DefaultContext) SendAllActor(opcode interface{}, msg proto.Message) err
 		return ErrWrongOpCode
 	}
 	return c.a.SendAllActor(_op, msg)
+}
+
+// SendActorLocation 向本地其他玩家发送Actor
+func (c *DefaultContext) SendActorLocation(userID int64, opcode interface{}, msg proto.Message) error {
+	_op := opcodeChange(opcode)
+	if _op == 0 {
+		return ErrWrongOpCode
+	}
+
+	p, err := CretaePbPacket(_op, msg)
+	if err != nil {
+		return err
+	}
+
+	return c.a.sendActorLocation(userID, p)
+}
+
+// SendActorPush 向远程玩家发送消息
+func (c *DefaultContext) SendActorPush(userID int64, opcode interface{}, msg proto.Message) error {
+	_op := opcodeChange(opcode)
+	if _op == 0 {
+		return ErrWrongOpCode
+	}
+
+	p, err := CretaePbPacket(_op, msg)
+	if err != nil {
+		return err
+	}
+
+	return c.a.sendActorPush(userID, p)
 }
 
 // Valid 验证成功

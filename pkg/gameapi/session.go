@@ -20,6 +20,7 @@ type Session struct {
 	isValid      int32         // 是否验证为有效连接
 	validTimer   *time.Timer   // 设置验证超时
 	heartLimiter *rate.Limiter // 心跳限制数量
+	expired      int64         // Session过期时间
 
 	sendChan    chan Packet // 发送队列
 	receiveChan chan Packet // 接收队列
@@ -92,6 +93,10 @@ func (s *Session) startValidTimer() {
 	}()
 }
 
+func (s *Session) App() *App {
+	return s.app
+}
+
 // UserID 获取玩家的UserID
 func (s *Session) UserID() int64 {
 	return s.userID
@@ -110,6 +115,22 @@ func (s *Session) SetUserData(d interface{}) {
 // SetUserID 设置玩家ID
 func (s *Session) SetUserID(userID int64) {
 	s.userID = userID
+}
+
+// SetExpired 设置session的过期时间
+func (s *Session) SetExpired(expired int64) {
+	s.expired = expired
+}
+
+// IsExipred 判断Session是否已经过期
+func (s *Session) IsExipred() bool {
+	if s.expired > 0 {
+		if time.Now().Unix() > s.expired {
+			return true
+		}
+	}
+
+	return false
 }
 
 // IsValid 是否验证为有效连接
@@ -175,6 +196,10 @@ func (s *Session) readLoop() {
 		case <-s.closeChan:
 			return
 		default:
+		}
+
+		if s.IsExipred() {
+			return
 		}
 
 		p, err := s.conn.ReadPacket()

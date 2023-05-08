@@ -138,7 +138,20 @@ func (a *App) AddModule(module Moddule) {
 func (a *App) AddSession(userID int64, session *Session) {
 	a.sessionMu.Lock()
 	defer a.sessionMu.Unlock()
+
+	// 已有Session，关闭
+	if oldSession, ok := a.sessions[userID]; ok {
+		oldSession.Close()
+	}
 	a.sessions[userID] = session
+}
+
+// DelSession 删除Session
+func (a *App) DelSession(userID int64) {
+	a.sessionMu.Lock()
+	defer a.sessionMu.Unlock()
+
+	delete(a.sessions, userID)
 }
 
 // GetTotalConn 获取连接总数
@@ -424,6 +437,11 @@ func (a *App) OnDisConnect(sesssion *Session) {
 
 	if a.disconnectListener != nil {
 		a.disconnectListener(sesssion)
+	}
+
+	// 从有效连接中删除
+	if sesssion.IsValid() {
+		a.DelSession(sesssion.UserID())
 	}
 }
 
