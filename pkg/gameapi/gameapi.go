@@ -146,6 +146,7 @@ func (a *App) AddSession(userID int64, session *Session) {
 	a.sessions[userID] = session
 }
 
+// DelSession 删除Session
 func (a *App) DelSession(userID int64) {
 	a.sessionMu.Lock()
 	defer a.sessionMu.Unlock()
