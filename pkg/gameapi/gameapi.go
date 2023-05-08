@@ -146,6 +146,13 @@ func (a *App) AddSession(userID int64, session *Session) {
 	a.sessions[userID] = session
 }
 
+func (a *App) DelSession(userID int64) {
+	a.sessionMu.Lock()
+	defer a.sessionMu.Unlock()
+
+	delete(a.sessions, userID)
+}
+
 // GetTotalConn 获取连接总数
 func (a *App) GetTotalConn() int64 {
 	return atomic.LoadInt64(&a.totalConn)
@@ -429,6 +436,11 @@ func (a *App) OnDisConnect(sesssion *Session) {
 
 	if a.disconnectListener != nil {
 		a.disconnectListener(sesssion)
+	}
+
+	// 从有效连接中删除
+	if sesssion.IsValid() {
+		a.DelSession(sesssion.UserID())
 	}
 }
 
