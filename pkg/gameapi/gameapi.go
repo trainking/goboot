@@ -138,6 +138,11 @@ func (a *App) AddModule(module Moddule) {
 func (a *App) AddSession(userID int64, session *Session) {
 	a.sessionMu.Lock()
 	defer a.sessionMu.Unlock()
+
+	// 已有Session，关闭
+	if oldSession, ok := a.sessions[userID]; ok {
+		oldSession.Close()
+	}
 	a.sessions[userID] = session
 }
 
