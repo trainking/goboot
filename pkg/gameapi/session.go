@@ -92,6 +92,10 @@ func (s *Session) startValidTimer() {
 	}()
 }
 
+func (s *Session) App() *App {
+	return s.app
+}
+
 // UserID 获取玩家的UserID
 func (s *Session) UserID() int64 {
 	return s.userID
