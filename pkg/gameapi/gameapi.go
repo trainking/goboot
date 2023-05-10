@@ -205,18 +205,20 @@ func (a *App) sendActorLocation(userID int64, p Packet) error {
 }
 
 // sendAllActorLocation 像所有的本地玩家发送消息
-func (a *App) sendAllActorLocation(p Packet) error {
+func (a *App) sendAllActorLocation(m PushActorMessage) error {
 	a.sessionMu.RLock()
 	defer a.sessionMu.RUnlock()
 	for userID := range a.sessions {
 		session := a.sessions[userID]
 		if !session.IsClosed() {
+			p := NewDefaultPacket(m.Msg, m.OpCode)
 			// 如果定义handler，必须发送给handler处理
 			if _, ok := a.router[p.OpCode()]; ok {
 				session.receiveChan <- p
-			}
-			if err := session.WritePacket(p); err != nil {
-				return err
+			} else {
+				if err := session.WritePacket(p); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -311,9 +313,8 @@ func (a *App) subscribePushUserMsg() {
 		case <-a.exitChan:
 			return
 		case m := <-a.un.Consume():
-			p := NewDefaultPacket(m.Msg, m.OpCode)
-
 			if m.UserID != -1 {
+				p := NewDefaultPacket(m.Msg, m.OpCode)
 				// 向特定玩家发送消息
 				if err := a.sendActorLocation(m.UserID, p); err != nil && err != ErrUserNoIn {
 					log.Errorf("PushActorMessage sendActorLocation Error: %v", err)
@@ -321,7 +322,7 @@ func (a *App) subscribePushUserMsg() {
 				}
 			} else {
 				// 向所有玩家广播消息
-				if err := a.sendAllActorLocation(p); err != nil && err != ErrUserNoIn {
+				if err := a.sendAllActorLocation(m); err != nil && err != ErrUserNoIn {
 					log.Errorf("PushActorMessage sendAllActorLocation Error: %v", err)
 					return
 				}
