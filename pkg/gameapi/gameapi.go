@@ -214,9 +214,10 @@ func (a *App) sendAllActorLocation(p Packet) error {
 			// 如果定义handler，必须发送给handler处理
 			if _, ok := a.router[p.OpCode()]; ok {
 				session.receiveChan <- p
-				return nil
 			}
-			return session.WritePacket(p)
+			if err := session.WritePacket(p); err != nil {
+				return err
+			}
 		}
 	}
 
