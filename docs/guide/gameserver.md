@@ -2,6 +2,7 @@
 
 - [Game Server: 游戏服](#game-server-游戏服)
   - [1. 概述](#1-概述)
+  - [1.1 Actor模式](#11-actor模式)
   - [2. 详细设计](#2-详细设计)
     - [2.1 协议](#21-协议)
     - [2.2 Instance](#22-instance)
@@ -9,6 +10,7 @@
       - [2.2.2 应用协议](#222-应用协议)
     - [2.3 Module](#23-module)
     - [2.4 Handler](#24-handler)
+      - [SendXXX](#sendxxx)
   - [3. 注意事项](#3-注意事项)
 
 
@@ -20,6 +22,30 @@
 * Etcd：服务注册发现的组件
 
 > 这里的游戏服，特指为游戏服务的服务器，即长链接服务器。如需要，开发http请求，可以通过httpapi包，定义一套配套API
+
+## 1.1 Actor模式
+
+> Actor模式是一种并发计算模型，旨在提高并发程序的可伸缩性和容错性。它最初由Carl Hewitt于1973年提出，并被称为Actor模型。
+> 在Actor模型中，计算单元被称为Actor。每个Actor都是独立的，具有自己的状态和行为，并且与其他Actor通过异步消息传递进行通信。
+
+这是标准的Actor模型，但是标准的Actor模型过于灵活，且对于程序的理解存在的很大问题。因此，goboot借鉴了Actor一些思想，采用的是`session-handler`方式。
+
+其中，`Session`可以看作是一个Actor，它的信箱由两个`chan`组成：
+
+```golang
+type Session struct {
+  ...
+
+  sendChan    chan Packet // 发送队列
+	receiveChan chan Packet // 接收队列
+
+  ...
+}
+```
+
+同时，对于message的处理，则是通过判断是否由注册Handler，如果由注册Handler，则处理，没有则直接**发送会客户端**；这样设计就意味着，对于客户端发送的消息，**必须要Handler**。
+
+使用Nats作为消息总线（也可以说是`Actor Push`），可以很好保证并发。
 
 ## 2. 详细设计
 
@@ -93,6 +119,7 @@ Etcd:
 | SendLimit       | int               | 是       | 最大发送消息包大小；发送消息缓冲区大小                  |
 | ReceiveLimit    | int               | 是       | 最大接收消息包大小；接收消息缓冲区大小                  |
 | HeartLimit      | int               | 是       | 心跳包限制数量, 每分钟不能超过的个数                    |
+| Password        | string            | 否       | 服务加密使用的密码                                      |
 | TLS             | map[string]string | 否       | TLS配置，配置了才开启                                   |
 | TLS.CertFile    | string            | 否       | cert文件路径                                            |
 | TLS.KeyFile     | string            | 否       | 密钥文件路径                                            |
@@ -172,6 +199,16 @@ func (m *GateWayM) C2S_SayHandler(c gameapi.Context) error {
 	})
 }
 ```
+
+#### SendXXX
+
+在Handler中，可以使用多种`ctx.SendXXX`方法，向玩家和`Actor push`发送消息:
+
+* Send：发送消息到玩家客户端
+* SendActor: 向指定玩家发送Actor消息，如果有Handler则会被Handler处理；如无，则会被直接发给玩家。同时，这个方法中，会优先判断玩家是否在本实例，在本实例，则直接发送，不会发送`Actor push`。
+* SendAllActor：向所有玩家广播一个Actor
+* SendActorLocation：发送到本实例指定玩家的Actor
+* SendActorPush: 发送消息到`Actor push`
 
 ## 3. 注意事项
 
