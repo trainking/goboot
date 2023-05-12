@@ -304,6 +304,10 @@ func (a *App) subscribePushUserMsg() {
 		return
 	}
 	defer func() {
+		e := recover()
+		if e != nil {
+			log.Errorf("App.subscribePushUserMsg Error: %v", e)
+		}
 		a.un.Close()
 		a.Stop()
 	}()

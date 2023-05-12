@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/trainking/goboot/pkg/log"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/naming/endpoints"
 )
@@ -98,6 +99,12 @@ func (s *ServiceManager) Watch(h func(key string, ep endpoints.Endpoint)) error 
 	}
 
 	go func() {
+		defer func() {
+			e := recover()
+			if e != nil {
+				log.Errorf("ServiceManager.Watch Error: %v", e)
+			}
+		}()
 		for u := range wChan {
 			for _, ud := range u {
 				h(ud.Key, ud.Endpoint)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/trainking/goboot/pkg/log"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/naming/resolver"
@@ -90,6 +91,12 @@ func (c *ClientX) GetWithPrefix(ctx context.Context, key string) ([][]byte, erro
 
 // Watch 监听指定键的变化
 func (c *ClientX) Watch(ctx context.Context, key string, putHandler ChangeHandler, delHandler ChangeHandler) {
+	defer func() {
+		e := recover()
+		if e != nil {
+			log.Errorf("ClientX.Watch Error: %v", e)
+		}
+	}()
 	wc := c.client.Watch(ctx, key)
 	c.watch(wc, putHandler, delHandler)
 }
@@ -110,6 +117,12 @@ func (c *ClientX) watch(wc clientv3.WatchChan, putHandler ChangeHandler, delHand
 
 // WatchWithPrefix 监听某一组简直对的变化
 func (c *ClientX) WatchWithPrefix(ctx context.Context, key string, putHandler ChangeHandler, delHandler ChangeHandler) {
+	defer func() {
+		e := recover()
+		if e != nil {
+			log.Errorf("ClientX.WatchWithPrefix Error: %v", e)
+		}
+	}()
 	wc := c.client.Watch(ctx, key, clientv3.WithPrefix())
 	c.watch(wc, putHandler, delHandler)
 }
