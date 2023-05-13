@@ -74,6 +74,10 @@ Logger:
 * [Service: gRPC微服务](./docs/guide/service.md)
 * [bootctl：命令行工具](./docs/guide/bootctl.md)
 
+## 关联项目
+
+* [goboot-csharp-client](https://github.com/trainking/goboot-csharp-client): gamapi的C#客户端实现，可用于unity开发
+
 ## 打赏作者
 
 ![打赏](./docs/guide/image/w_20230424115445.png)
