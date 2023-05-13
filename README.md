@@ -16,7 +16,7 @@
 
 ### 使用bootctl
 
-**goboot**推荐使用`bootctl`命令行工具，来生成代码结构和代码，方便在多人开发时，控制编码规范。具体[参考](./docs/guide/bootctl.m)。
+**goboot**推荐使用`bootctl`命令行工具，来生成代码结构和代码，方便在多人开发时，控制编码规范。具体[参考](./docs/guide/bootctl.md)。
 
 一个规范的目录结构如下:
 
