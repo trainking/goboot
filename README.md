@@ -45,68 +45,7 @@
 └─pkg                             # 公共包
 ```
 
-### http api
-
-**goboot**开发http服务器，只需要传入调用`httpapi`包，传入配置文件地址，监听端口，以及实例ID:
-
-```go
-instance := httpapi.New(*configPath, *addr, *instanceId)
-
-...
-
-// 启动
-boot.BootServe(instance)
-```
-
-通过模块化的Module，来建立API，一个Module要遵循`httpapi.Module`的定义：
-
-```golang
-Module interface {
-		// 初始化模块
-		Init(app *App)
-		// 模块的分组路由
-		Group() Group
-}
-```
-
-> 依赖nats做消息转发，Etcd做服务注册
-
-### gRPC Service
-
-**goboot**开发gRPC服务器，同样只需要使用：
-
-```
-instance := server.New(*name, *configPath, *addr, *instanceId)
-
-boot.BootServe(instance)
-```
-
-不同的是，这里的server需要定制protobuf文件实现。
-
-### Game Server
-
-**goboot**开发游戏服务器，使用的`gameapi`包的实现：
-
-```golang
-instance := gameapi.New(*configPath, *addr, *instanceId)
-
-boot.BootServe(instance)
-```
-
-同样使用的模块化的管理接口，不同的是，gameapi使用的`opcode->protobufMessage`的映射管理作为路由：
-
-```go
-Moddule interface {
-
-		// 初始化模块
-		Init(app *App)
-
-		// 模块的分组路由
-		Group() map[uint16]Handler
-}
-```
-
-> 依赖Etcd做服务注册
+> 详情请查阅参考文件
 
 ## 惯例
 
@@ -137,4 +76,4 @@ Logger:
 
 ## 打赏作者
 
-![打赏](./docs/guide/image/w_20230424115444.jpg)
+![打赏](./docs/guide/image/w_20230424115445.png)
