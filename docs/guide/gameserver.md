@@ -113,6 +113,7 @@ Etcd:
 | NatsUrl         | string            | 是       | NATS的地址                                              |
 | Network         | string            | 是       | 传输协议，可以是`tcp`, `kcp`, `websocket`               |
 | WebsocketPath   | string            | 否       | 传输协议是`websocket`时必须                             |
+| KcpMode         | string            | 否       | kcp模式，nomarl 普通模式 fast 极速模式；默认极速模式    |
 | ConnReadTimeout | int               | 是       | 每个连接的读超时(等于客户端心跳的超时)，秒为单位        |
 | ConnReadTimeout | int               | 是       | 每个连接的写超时，秒为单位                              |
 | ValidTimeout    | int               | 是       | 连接成功后，验证身份超时，秒为单位                      |

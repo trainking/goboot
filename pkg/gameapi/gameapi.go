@@ -270,6 +270,7 @@ func (a *App) Init() (err error) {
 			return err
 		}
 	case "kcp":
+		netConfig.KcpMode = a.Config.GetString("KcpMode")
 		a.listener, err = NewKcpNetListener(netConfig)
 		if err != nil {
 			return err

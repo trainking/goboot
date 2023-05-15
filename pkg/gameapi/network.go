@@ -22,6 +22,7 @@ type (
 		ReadeTimeout time.Duration // 读取超时
 
 		WebSocketPath string // ws连接的升级使用地址
+		KcpMode       string // kcp的模式
 	}
 
 	// NetListener 接收请求的监听器
@@ -164,7 +165,12 @@ func (l *KcpNetListener) Accept() (NetConn, error) {
 
 	kcpConn := c.(*kcp.UDPSession)
 	// 极速模式；普通模式参数为 0, 40, 0, 0
-	kcpConn.SetNoDelay(1, 10, 2, 1)
+	if l.config.KcpMode == "nomarl" {
+		kcpConn.SetNoDelay(0, 40, 0, 0)
+	} else {
+		kcpConn.SetNoDelay(1, 10, 2, 1)
+	}
+
 	kcpConn.SetStreamMode(true)
 	kcpConn.SetWindowSize(4096, 4096)
 	kcpConn.SetReadBuffer(4 * 65536 * 1024)
