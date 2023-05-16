@@ -11,6 +11,8 @@
     - [2.3 Module](#23-module)
     - [2.4 Handler](#24-handler)
       - [SendXXX](#sendxxx)
+    - [2.5 Listener](#25-listener)
+    - [2.6 Middleware](#26-middleware)
   - [3. 注意事项](#3-注意事项)
 
 
@@ -210,6 +212,31 @@ func (m *GateWayM) C2S_SayHandler(c gameapi.Context) error {
 * SendAllActor：向所有玩家广播一个Actor
 * SendActorLocation：发送到本实例指定玩家的Actor
 * SendActorPush: 发送消息到`Actor push`
+
+### 2.5 Listener
+
+Listener是监听连接状态的监听器。`gamapi`中提供两个监听器，分别是`ConnectListener`和`DisconnectListener`，分别代表对连接建立和连接断开的监听。可以通过`app.SetConnectListener()`和`app.SetDisconnectListener`设置它们的实现，它们的实现必须是一个Listener函数:
+
+```go
+// Listener 监听器
+	Listener func(*Session) error
+```
+
+> 注意：这两个监听器在gameapi中，保持单个实现，重复设置将会被覆盖
+
+### 2.6 Middleware
+
+Middleware是处理消息时的中间件，`gameapi`提供了两种中间件，分别是`beforeMiddleware`和`afterMiddleware`两种，分别代表前置中间件和后置中间件，发生在处理消息之前和处理之后。它们都可以定义多个，每个都会通过`Condition`条件，判断是否可以被执行:
+
+```go
+  // Middleware 中间件处理
+	Middleware struct {
+		// Condition 是否要处理的opcode
+		Condition func(uint16) bool
+		// Do 处理执行
+		Do func(Context) error
+	}
+```
 
 ## 3. 注意事项
 
