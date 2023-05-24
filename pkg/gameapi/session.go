@@ -6,11 +6,13 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/trainking/goboot/pkg/idgen"
 	"golang.org/x/time/rate"
 )
 
 // Session 网络会话
 type Session struct {
+	ID  int64 // session的唯一标识
 	app *App
 
 	conn         NetConn       // 网络连接
@@ -47,6 +49,7 @@ type SessionCallback interface {
 // NewSession 新建一个Session
 func NewSession(conn NetConn, app *App) *Session {
 	return &Session{
+		ID:           idgen.GenerateInt64(),
 		app:          app,
 		callback:     app,
 		conn:         conn,

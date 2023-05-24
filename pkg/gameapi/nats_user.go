@@ -71,6 +71,14 @@ func (u *UserNats) StartSubscribe(subLimit int) error {
 	u.sub = sub
 
 	go func() {
+		defer func() {
+			e := recover()
+			if e != nil {
+				log.Errorf("App.subscribePushUserMsg Error: %v", e)
+			}
+			u.Close()
+		}()
+
 		for {
 			select {
 			case <-u.closeChan:

@@ -72,7 +72,7 @@ func (m *GateWayM) C2S_SayHandler(c gameapi.Context) error {
 		return err
 	}
 
-	log.Infof("Say %v", msg)
+	log.Infof("Say %v", &msg)
 
 	c.SendActor(msg.Actor, uint16(pb.OpCode_Op_S2S_Hi), &pb.S2S_Hi{
 		Repeat: "repeat: " + msg.Word,
@@ -89,7 +89,7 @@ func (m *GateWayM) S2S_Hi(c gameapi.Context) error {
 		return err
 	}
 
-	log.Infof("Hi:%v", msg)
+	log.Infof("Hi:%v", &msg)
 
 	return nil
 }

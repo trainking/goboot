@@ -147,11 +147,15 @@ func (a *App) AddSession(userID int64, session *Session) {
 }
 
 // DelSession 删除Session
-func (a *App) DelSession(userID int64) {
+func (a *App) DelSession(userID int64, sessionid int64) {
 	a.sessionMu.Lock()
 	defer a.sessionMu.Unlock()
 
-	delete(a.sessions, userID)
+	if _session, ok := a.sessions[userID]; ok {
+		if _session.ID == sessionid {
+			delete(a.sessions, userID)
+		}
+	}
 }
 
 // GetTotalConn 获取连接总数
@@ -448,7 +452,7 @@ func (a *App) OnDisConnect(sesssion *Session) {
 
 	// 从有效连接中删除
 	if sesssion.IsValid() {
-		a.DelSession(sesssion.UserID())
+		a.DelSession(sesssion.UserID(), sesssion.ID)
 	}
 }
 
