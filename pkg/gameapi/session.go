@@ -68,7 +68,7 @@ func (s *Session) Close() {
 		close(s.sendChan)
 		close(s.receiveChan)
 		s.conn.Close()
-		s.callback.OnDisConnect(s)
+		go s.callback.OnDisConnect(s)
 	})
 }
 
