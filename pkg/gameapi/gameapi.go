@@ -89,6 +89,7 @@ func New(name string, configPath string, addr string, instancdID int64) *App {
 		ID:       instancdID,
 		State:    StateZero,
 		Password: v.GetString("Password"),
+		OutUrl:   v.GetString("OutUrl"),
 	}
 	app.un = un
 	app.Config = v

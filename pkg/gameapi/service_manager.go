@@ -24,6 +24,7 @@ type (
 		Fuse     bool   `json:"fuse"`     // 熔断开关，true为开启，熔断状态下，服务不接受新连接，等待服务器降到0
 		State    int    `json:"state"`    // 状态
 		Password string `json:"password"` // 该服务加密使用的密码
+		OutUrl   string `json:"out_url"`  // 外部访问的URL
 	}
 )
 
