@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/trainking/goboot/pkg/idgen"
+	"github.com/trainking/goboot/pkg/log"
 	"golang.org/x/time/rate"
 )
 
@@ -38,6 +39,9 @@ type SessionCallback interface {
 
 	// OnConnect 当连接建立时调用
 	OnConnect(*Session) bool
+
+	// OnHeartbeat 当心跳包到达时处理
+	OnHeartbeat(*Session)
 
 	// OnMessage 当连接处理消息时
 	OnMessage(*Session, Packet) bool
@@ -263,7 +267,9 @@ func (s *Session) handleLoop() {
 			// 处理心跳包
 			if p.OpCode() == 0 {
 				// 心跳包过载，则跳出
+				s.callback.OnHeartbeat(s)
 				if err := s.heartLimiter.Wait(context.Background()); err != nil {
+					log.Warnf("%d Heart Packet Out Limit", s.UserID())
 					return
 				}
 				continue
