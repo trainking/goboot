@@ -20,6 +20,8 @@ type (
 
 		e         *echo.Echo
 		validator *StructValidator // 验证器
+
+		serverCtx *ServerContext
 	}
 
 	// Router 路由
@@ -57,22 +59,9 @@ type (
 	}
 )
 
-// New creates a new application.
-func New(name string, configPath string, addr string, instancdID int64) *App {
-	// 加载配置
-	v, err := utils.LoadConfigFileViper(configPath)
-	if err != nil {
-		panic(err)
-	}
-
-	app := new(App)
-	app.Name = name
-	app.e = echo.New()
-	app.validator = NewStructValidator()
-	app.Config = v
-	app.Addr = addr
-	app.IntanceID = instancdID
-	return app
+// NewStructValidator 构建新结构体
+func NewStructValidator() *StructValidator {
+	return &StructValidator{validator: validator.New()}
 }
 
 // Validate 实现echo.Validator
@@ -90,9 +79,28 @@ func (s *StructValidator) transEchoValidator() echo.Validator {
 	return s
 }
 
-// NewStructValidator 构建新结构体
-func NewStructValidator() *StructValidator {
-	return &StructValidator{validator: validator.New()}
+// New creates a new application.
+func New(name string, configPath string, addr string, instancdID int64) *App {
+	// 加载配置
+	v, err := utils.LoadConfigFileViper(configPath)
+	if err != nil {
+		panic(err)
+	}
+
+	app := new(App)
+	app.Name = name
+	app.e = echo.New()
+	app.validator = NewStructValidator()
+	app.Config = v
+	app.Addr = addr
+	app.IntanceID = instancdID
+	app.serverCtx = newServerContext()
+	return app
+}
+
+// ServerContext 获取服务的
+func (a *App) ServerContext() *ServerContext {
+	return a.serverCtx
 }
 
 // AddRouter adds a router to the application.
