@@ -1,3 +1,5 @@
+# 服务的版本号
+Version: "0.0.1"
 # 服务注册的前缀
 Prefix: "/gameserver"
 # 服务注册的Etcd地址
@@ -27,6 +29,8 @@ ReceiveLimit: 1024
 HeartLimit: 100
 # 服务加密使用的密码
 Password: "66014775009e4106"
+# 外部访问的url
+OutUrl: "192.168.1.9:8888"
 
 # 是否开启TLS
 # TLS:

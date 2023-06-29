@@ -19,6 +19,7 @@ const (
 type (
 	GameMetaData struct {
 		ID       int64       `json:"id"`       // 实例ID
+		Version  string      `json:"version"`  // 当前服务的版本
 		Network  string      `json:"network"`  // 传输协议
 		UseTLS   bool        `json:"use_tls"`  // 是否启用TLS
 		Fuse     bool        `json:"fuse"`     // 熔断开关，true为开启，熔断状态下，服务不接受新连接，等待服务器降到0

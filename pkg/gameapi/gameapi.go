@@ -91,6 +91,7 @@ func New(name string, configPath string, addr string, instancdID int64) *App {
 		State:    StateZero,
 		Password: v.GetString("Password"),
 		OutUrl:   v.GetString("OutUrl"),
+		Version:  v.GetString("Version"),
 	}
 	app.un = un
 	app.Config = v
