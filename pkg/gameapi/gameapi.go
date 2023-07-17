@@ -40,7 +40,7 @@ type (
 
 		totalConn int64 // 连接数量
 
-		modules []Moddule // 服务上的模块
+		modules []Module // 服务上的模块
 
 		sessions  map[int64]*Session // 有效Session映射
 		sessionMu sync.RWMutex
@@ -58,7 +58,7 @@ type (
 	Listener func(*Session) error
 
 	// Module 模块
-	Moddule interface {
+	Module interface {
 
 		// 初始化模块
 		Init(app *App)
@@ -138,7 +138,7 @@ func (a *App) AddHandler(opcode interface{}, h Handler) {
 }
 
 // AddModule 增加所有模块
-func (a *App) AddModule(module Moddule) {
+func (a *App) AddModule(module Module) {
 	a.modules = append(a.modules, module)
 }
 

@@ -9,7 +9,7 @@ import (
 	"github.com/trainking/goboot/pkg/log"
 )
 
-var Module = func() gameapi.Moddule {
+var Module = func() gameapi.Module {
 	return new(GateWayM)
 }
 
