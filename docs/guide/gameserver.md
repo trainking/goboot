@@ -1,9 +1,9 @@
-# Game Server: 游戏服
+# Game API的最佳实践
 
-- [Game Server: 游戏服](#game-server-游戏服)
+- [Game API的最佳实践](#game-api的最佳实践)
   - [1. 概述](#1-概述)
   - [1.1 Actor模式](#11-actor模式)
-  - [2. 详细设计](#2-详细设计)
+  - [2. 基础概念](#2-基础概念)
     - [2.1 协议](#21-协议)
     - [2.2 Instance](#22-instance)
       - [2.2.1 配置文件](#221-配置文件)
@@ -13,7 +13,11 @@
       - [SendXXX](#sendxxx)
     - [2.5 Listener](#25-listener)
     - [2.6 Middleware](#26-middleware)
-  - [3. 注意事项](#3-注意事项)
+  - [3. 实践](#3-实践)
+    - [3.1 建立一个game api的实例](#31-建立一个game-api的实例)
+    - [3.2 增加建立连接监听和断开连接监听](#32-增加建立连接监听和断开连接监听)
+    - [3.3 增加handler处理的前置和后置条件](#33-增加handler处理的前置和后置条件)
+  - [4. 注意事项](#4-注意事项)
 
 
 ## 1. 概述
@@ -49,7 +53,7 @@ type Session struct {
 
 使用Nats作为消息总线（也可以说是`Actor Push`），可以很好保证并发。
 
-## 2. 详细设计
+## 2. 基础概念
 
 ### 2.1 协议
 
@@ -238,6 +242,103 @@ Middleware是处理消息时的中间件，`gameapi`提供了两种中间件，�
 	}
 ```
 
-## 3. 注意事项
+## 3. 实践
+
+### 3.1 建立一个game api的实例
+
+1. 在根目录下的`internal/api`目录下，增加一个具体实例名的文件
+2. 此包中建立一个`xxx.api.go`的入口文件， 范例如下:
+
+```go
+package main
+
+...
+
+var (
+	name       = flag.String("name", "Gateway", "game server name")
+	addr       = flag.String("addr", ":6001", "gameserver api lisen addr")
+	configPath = flag.String("config", "configs/gameserver.api.yml", "config file path")
+	instanceId = flag.Int64("instance", 1, "run instance id")
+)
+
+func main() {
+	flag.Parse()
+
+	instance := gameapi.New(*name, *configPath, *addr, *instanceId)
+
+  // 增加模块
+	instance.AddModule(gateway.Module())
+
+	fmt.Println("game server start listen: ", *addr)
+	if err := boot.BootServe(instance); err != nil {
+		fmt.Println("server start failed, Error: ", err)
+		return
+	}
+}
+```
+
+3. 根据具体业务建立模块，在此包中，建立具体模块包，同时模块包中，约定必有一个`module.go`文件，此文件中初始化一个模块：
+
+```go
+var Module = func() gameapi.Module {
+	return new(GateWayM)
+}
+
+type GateWayM struct {
+}
+
+func (m *GateWayM) Init(a *gameapi.App) {
+	log.Info("Module init")
+
+	...
+
+  // 增加opcode与handler处理映射
+	a.AddHandler(pb.OpCode_Op_C2S_Login, m.C2S_LoginHandler)
+	a.AddHandler(pb.OpCode_Op_C2S_Say, m.C2S_SayHandler)
+	a.AddHandler(pb.OpCode_Op_S2S_Hi, m.S2S_Hi)
+}
+```
+
+4. 将Module在`xxx.api.go`文件中，通过`AddModule`函数加入到实例中，便可以应用。注意，要注意加入的位置，应在New和Start之间。
+
+### 3.2 增加建立连接监听和断开连接监听
+
+建立连接和断开连接，是一个长连接服务器中，非常重要的事件。监听这两个事件，我们可以在连接建立时，做一些初始化的操作，在连接断开时，做一些销毁动作。`GOBOOT`中，增加了两个函数，分别是:
+
+```go
+
+  // 建立连接监听事件
+  a.SetConnectListener(func(s *gameapi.Session) error {
+		log.Infof("ConnectNum: %d", a.GetTotalConn())
+		return nil
+	})
+
+  // 断开连接的监听事件
+	a.SetDisconnectListener(func(s *gameapi.Session) error {
+		log.Infof("ConnectNum: %d", a.GetTotalConn())
+		return nil
+	})
+```
+
+### 3.3 增加handler处理的前置和后置条件
+
+消息处理的前置和后置，会在消息处理之前和消息处理之后，执行处理。需要注意的是，必须满足`Condition`条件，Do函数才会被执行。
+
+```go
+  // 设置消息处理前中间件
+	a.AddBeforeMiddleware(gameapi.Middleware{
+		Condition: func(opcode uint16) bool {
+			return opcode != uint16(pb.OpCode_Op_C2S_Login)
+		},
+		Do: func(ctx gameapi.Context) error {
+			if !ctx.Session().IsValid() {
+				return fmt.Errorf("session is valid, opcode: %d", ctx.GetOpCode())
+			}
+			return nil
+		},
+	})
+```
+
+## 4. 注意事项
 
 > 使用`gameapi`开发游戏服务器时，opcode为0已经被心跳包占用
