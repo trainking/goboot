@@ -18,13 +18,15 @@ const (
 
 type (
 	GameMetaData struct {
-		ID       int64  `json:"id"`       // 实例ID
-		Network  string `json:"network"`  // 传输协议
-		UseTLS   bool   `json:"use_tls"`  // 是否启用TLS
-		Fuse     bool   `json:"fuse"`     // 熔断开关，true为开启，熔断状态下，服务不接受新连接，等待服务器降到0
-		State    int    `json:"state"`    // 状态
-		Password string `json:"password"` // 该服务加密使用的密码
-		OutUrl   string `json:"out_url"`  // 外部访问的URL
+		ID       int64       `json:"id"`       // 实例ID
+		Version  string      `json:"version"`  // 当前服务的版本
+		Network  string      `json:"network"`  // 传输协议
+		UseTLS   bool        `json:"use_tls"`  // 是否启用TLS
+		Fuse     bool        `json:"fuse"`     // 熔断开关，true为开启，熔断状态下，服务不接受新连接，等待服务器降到0
+		State    int         `json:"state"`    // 状态
+		Password string      `json:"password"` // 该服务加密使用的密码
+		OutUrl   string      `json:"out_url"`  // 外部访问的URL
+		Extra    interface{} `json:"extra"`    // 额外数据，自定义舒勇
 	}
 )
 
@@ -66,6 +68,27 @@ func (a *App) UpdateGdState(state int) error {
 	}
 
 	a.gd.State = state
+	return a.serviceManager.PushEndpoint(a.Addr, a.gd)
+}
+
+// UpdateGdExtra 修改服务的
+func (a *App) UpdateGdExtra(extra interface{}) error {
+	a.gd.Extra = extra
+
+	return a.serviceManager.PushEndpoint(a.Addr, a.gd)
+}
+
+// EnableFuse 打开熔断开关
+func (a *App) EnableFuse() error {
+	a.gd.Fuse = true
+
+	return a.serviceManager.PushEndpoint(a.Addr, a.gd)
+}
+
+// DisableFuse 关闭熔断开关
+func (a *App) DisableFuse() error {
+	a.gd.Fuse = false
+
 	return a.serviceManager.PushEndpoint(a.Addr, a.gd)
 }
 

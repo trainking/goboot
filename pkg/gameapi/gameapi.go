@@ -32,6 +32,7 @@ type (
 
 		connectListener    Listener     // 会话建立时的连接监听
 		disconnectListener Listener     // 会话断开时的连接监听器
+		heartbeatListener  Listener     // 会话发送心跳时的监听器
 		beforeMiddleware   []Middleware // 会话处理消息之前执行的中间件
 		afterMiddleware    []Middleware // 会话处理消息之后执行的中间件
 
@@ -39,7 +40,7 @@ type (
 
 		totalConn int64 // 连接数量
 
-		modules []Moddule // 服务上的模块
+		modules []Module // 服务上的模块
 
 		sessions  map[int64]*Session // 有效Session映射
 		sessionMu sync.RWMutex
@@ -57,7 +58,7 @@ type (
 	Listener func(*Session) error
 
 	// Module 模块
-	Moddule interface {
+	Module interface {
 
 		// 初始化模块
 		Init(app *App)
@@ -90,6 +91,7 @@ func New(name string, configPath string, addr string, instancdID int64) *App {
 		State:    StateZero,
 		Password: v.GetString("Password"),
 		OutUrl:   v.GetString("OutUrl"),
+		Version:  v.GetString("Version"),
 	}
 	app.un = un
 	app.Config = v
@@ -109,6 +111,11 @@ func (a *App) SetConnectListener(l Listener) {
 // SetDisconnectListener 设置断连监听器
 func (a *App) SetDisconnectListener(l Listener) {
 	a.disconnectListener = l
+}
+
+// SetHeartbeatListener 设置心跳监听器
+func (a *App) SetHeartbeatListener(l Listener) {
+	a.heartbeatListener = l
 }
 
 // SetBeforeMiddleware 设置消息处理前中间件
@@ -131,7 +138,7 @@ func (a *App) AddHandler(opcode interface{}, h Handler) {
 }
 
 // AddModule 增加所有模块
-func (a *App) AddModule(module Moddule) {
+func (a *App) AddModule(module Module) {
 	a.modules = append(a.modules, module)
 }
 
@@ -444,16 +451,23 @@ func (a *App) OnMessage(session *Session, p Packet) bool {
 }
 
 // OnDisConnect 断线处理
-func (a *App) OnDisConnect(sesssion *Session) {
+func (a *App) OnDisConnect(session *Session) {
 	atomic.AddInt64(&a.totalConn, -1)
 
 	if a.disconnectListener != nil {
-		a.disconnectListener(sesssion)
+		a.disconnectListener(session)
 	}
 
 	// 从有效连接中删除
-	if sesssion.IsValid() {
-		a.DelSession(sesssion.UserID(), sesssion.ID)
+	if session.IsValid() {
+		a.DelSession(session.UserID(), session.ID)
+	}
+}
+
+// OnHeartbeat 心跳处理
+func (a *App) OnHeartbeat(session *Session) {
+	if a.heartbeatListener != nil {
+		a.heartbeatListener(session)
 	}
 }
 

@@ -1,13 +1,11 @@
 package gameapi
 
 import (
-	"context"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/trainking/goboot/pkg/idgen"
-	"golang.org/x/time/rate"
 )
 
 // Session 网络会话
@@ -15,14 +13,13 @@ type Session struct {
 	ID  int64 // session的唯一标识
 	app *App
 
-	conn         NetConn       // 网络连接
-	closeOnce    sync.Once     // 关闭控制
-	closeFlag    int32         // 关闭标志
-	closeChan    chan struct{} // 关闭channel
-	isValid      int32         // 是否验证为有效连接
-	validTimer   *time.Timer   // 设置验证超时
-	heartLimiter *rate.Limiter // 心跳限制数量
-	expired      int64         // Session过期时间
+	conn       NetConn       // 网络连接
+	closeOnce  sync.Once     // 关闭控制
+	closeFlag  int32         // 关闭标志
+	closeChan  chan struct{} // 关闭channel
+	isValid    int32         // 是否验证为有效连接
+	validTimer *time.Timer   // 设置验证超时
+	expired    int64         // Session过期时间
 
 	sendChan    chan Packet // 发送队列
 	receiveChan chan Packet // 接收队列
@@ -39,6 +36,9 @@ type SessionCallback interface {
 	// OnConnect 当连接建立时调用
 	OnConnect(*Session) bool
 
+	// OnHeartbeat 当心跳包到达时处理
+	OnHeartbeat(*Session)
+
 	// OnMessage 当连接处理消息时
 	OnMessage(*Session, Packet) bool
 
@@ -49,14 +49,13 @@ type SessionCallback interface {
 // NewSession 新建一个Session
 func NewSession(conn NetConn, app *App) *Session {
 	return &Session{
-		ID:           idgen.GenerateInt64(),
-		app:          app,
-		callback:     app,
-		conn:         conn,
-		closeChan:    make(chan struct{}),
-		sendChan:     make(chan Packet, app.Config.GetInt("SendLimit")),
-		receiveChan:  make(chan Packet, app.Config.GetInt("ReceiveLimit")),
-		heartLimiter: rate.NewLimiter(rate.Every(time.Minute), app.Config.GetInt("HeartLimit")),
+		ID:          idgen.GenerateInt64(),
+		app:         app,
+		callback:    app,
+		conn:        conn,
+		closeChan:   make(chan struct{}),
+		sendChan:    make(chan Packet, app.Config.GetInt("SendLimit")),
+		receiveChan: make(chan Packet, app.Config.GetInt("ReceiveLimit")),
 	}
 }
 
@@ -263,9 +262,7 @@ func (s *Session) handleLoop() {
 			// 处理心跳包
 			if p.OpCode() == 0 {
 				// 心跳包过载，则跳出
-				if err := s.heartLimiter.Wait(context.Background()); err != nil {
-					return
-				}
+				s.callback.OnHeartbeat(s)
 				continue
 			}
 

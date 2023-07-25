@@ -45,34 +45,8 @@
 └─pkg                             # 公共包
 ```
 
-> 详情请查阅参考文件
+> 详情请查阅[参考指南](./docs/guide/README.md)
 
-## 惯例
-
-开发能够遵循一些管理来实现，这样可以大部分减少描述的篇幅，**遵循惯例，也方便多人开发的协作**。因此，推崇一下惯例：
-
-1. 所有**实例**的配置文件都放在根目录下的`configs`目录
-2. 所有**实例**的配置文件中，设定日志配置条件
-```yaml
-# 日志配置
-Logger:
-  # 日志输出级别，debug->info->warn->error
-  Level: "debug"
-  # 日志文件的输出分类，文件名是 {target}_{instanceId}.log
-  Target: "gameserver.api"
-  # 日志输文件夹
-  Outpath: "./logs"
-```
-1. 所有`api`接口的实现，都需要参考Module实现模块化
-2. 所有`service`的实现，必须通过protobuff定义gRPC实现
-3. 其他惯例，可以参考示例中的参考实现
-
-## 参考
-
-* [Game Server: 游戏服](./docs/guide/gameserver.md)
-* [HTTP API: http开发Api接口](./docs/guide/httpapi.md)
-* [Service: gRPC微服务](./docs/guide/service.md)
-* [bootctl：命令行工具](./docs/guide/bootctl.md)
 
 ## 关联项目
 
