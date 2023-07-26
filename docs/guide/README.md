@@ -50,6 +50,7 @@
 * [HTTP API的最佳实践](./httpapi.md)
 * [Game API的最佳实践](./gameserver.md)
 * [Service的最佳实践](./Service.md)
+* [bootctl命令行工具](./bootctl.md)
 
 ## 配置
 
