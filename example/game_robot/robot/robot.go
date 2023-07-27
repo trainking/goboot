@@ -5,7 +5,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/trainking/goboot/internal/pb"
@@ -38,7 +38,7 @@ func New(network string, addr string) *Robot {
 func NewTLS(network string, addr string, serverName string, certFile string) *Robot {
 	r := new(Robot)
 
-	cert, err := ioutil.ReadFile(certFile)
+	cert, err := os.ReadFile(certFile)
 	if err != nil {
 		panic(err)
 	}
