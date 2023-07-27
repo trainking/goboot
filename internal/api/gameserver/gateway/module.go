@@ -29,7 +29,7 @@ func (m *GateWayM) Init(a *gameapi.App) {
 	})
 
 	a.SetHeartbeatListener(func(s *gameapi.Session) error {
-		log.Infof("heabetnum: %d", s.HeartbeatCount())
+		log.Infof("ID: %d heabetnum: %d", s.ID, s.HeartbeatCount())
 		return nil
 	})
 

@@ -100,7 +100,7 @@ func (r *Robot) Receive() {
 				return
 			}
 
-			fmt.Printf("Say %v\n", _resultMSg)
+			fmt.Printf("Say %+v\n", _resultMSg.Word)
 		}
 	}
 }

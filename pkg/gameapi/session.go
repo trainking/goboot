@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/trainking/goboot/pkg/idgen"
+	"google.golang.org/protobuf/proto"
 )
 
 // Session 网络会话
@@ -129,6 +130,20 @@ func (s *Session) SetUserID(userID int64) {
 // SetExpired 设置session的过期时间
 func (s *Session) SetExpired(expired int64) {
 	s.expired = expired
+}
+
+// Send 向此session推送消息
+func (s *Session) Send(opcode interface{}, msg proto.Message) error {
+	_op := opcodeChange(opcode)
+	if _op == 0 {
+		return ErrWrongOpCode
+	}
+	p, err := CretaePbPacket(_op, msg)
+	if err != nil {
+		return err
+	}
+
+	return s.WritePacket(p)
 }
 
 // IsExipred 判断Session是否已经过期

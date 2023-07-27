@@ -84,16 +84,7 @@ func (c *DefaultContext) Session() *Session {
 
 // WritePbPacket 写入Protobuf的包
 func (c *DefaultContext) Send(opcode interface{}, msg proto.Message) error {
-	_op := opcodeChange(opcode)
-	if _op == 0 {
-		return ErrWrongOpCode
-	}
-	p, err := CretaePbPacket(_op, msg)
-	if err != nil {
-		return err
-	}
-
-	return c.session.WritePacket(p)
+	return c.session.Send(opcode, msg)
 }
 
 // SendActor 向指定玩家发送消息
