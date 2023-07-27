@@ -72,6 +72,7 @@ func NewClient(network string, config NetConfig, readLimit int, sendLimit int, h
 		} else {
 			dialer = websocket.DefaultDialer
 		}
+		fmt.Println(u.String())
 		c, _, err := dialer.Dial(u.String(), nil)
 		if err != nil {
 			return nil, err

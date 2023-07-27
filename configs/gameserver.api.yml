@@ -4,9 +4,9 @@ Version: "0.0.1"
 Prefix: "/gameserver"
 # 服务注册的Etcd地址
 Etcd:
-  - "192.168.1.9:2379"
+  - "192.168.1.11:2379"
 # NATS的地址
-NatsUrl: "nats://192.168.1.9:4222"
+NatsUrl: "nats://192.168.1.11:4222"
 # 传输层协议，tcp, kcp，websocket
 Network: "websocket"
 # websocket时使用升级路径
@@ -30,7 +30,7 @@ HeartLimit: 100
 # 服务加密使用的密码
 Password: "66014775009e4106"
 # 外部访问的url
-OutUrl: "192.168.1.9:8888"
+OutUrl: "192.168.1.11:8888"
 
 # 是否开启TLS
 # TLS:

@@ -28,6 +28,8 @@ type Session struct {
 
 	userID   int64       // sesssion所属的玩家ID
 	userData interface{} // session所属玩家额外数据
+
+	heartbeatCount int64 // 连接的心跳包计数器
 }
 
 // SessionCallback session触发外部事件调用
@@ -107,6 +109,11 @@ func (s *Session) UserID() int64 {
 // UserData 获取玩家的额外数据
 func (s *Session) UserData() interface{} {
 	return s.userData
+}
+
+// HeartbeatCount 连接的心跳包计数
+func (s *Session) HeartbeatCount() int64 {
+	return atomic.LoadInt64(&s.heartbeatCount)
 }
 
 // SetUserData 设置玩家的额外数据

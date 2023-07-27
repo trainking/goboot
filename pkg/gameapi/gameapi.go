@@ -466,6 +466,7 @@ func (a *App) OnDisConnect(session *Session) {
 
 // OnHeartbeat 心跳处理
 func (a *App) OnHeartbeat(session *Session) {
+	atomic.AddInt64(&session.heartbeatCount, 1)
 	if a.heartbeatListener != nil {
 		a.heartbeatListener(session)
 	}

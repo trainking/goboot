@@ -28,6 +28,11 @@ func (m *GateWayM) Init(a *gameapi.App) {
 		return nil
 	})
 
+	a.SetHeartbeatListener(func(s *gameapi.Session) error {
+		log.Infof("heabetnum: %d", s.HeartbeatCount())
+		return nil
+	})
+
 	// 设置消息处理前中间件
 	a.AddBeforeMiddleware(gameapi.Middleware{
 		Condition: func(opcode uint16) bool {

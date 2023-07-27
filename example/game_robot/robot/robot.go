@@ -21,9 +21,13 @@ func New(network string, addr string) *Robot {
 	r := new(Robot)
 
 	var err error
-	r.client, err = gameapi.NewClient(network, gameapi.NetConfig{
+	var config = gameapi.NetConfig{
 		Addr: addr,
-	}, 1024, 1024, 3*time.Second)
+	}
+	if network == "websocket" {
+		config.WebSocketPath = "/ws"
+	}
+	r.client, err = gameapi.NewClient(network, config, 1024, 1024, 3*time.Second)
 	if err != nil {
 		panic(err)
 	}

@@ -12,9 +12,11 @@ func main() {
 	// 	startRobot(strconv.Itoa(i), "123456")
 	// }
 
-	r1 := robot.NewTLS("websocket", "192.168.1.30:6001", "example.com", "../ssldata/server.cert")
+	// r1 := robot.NewTLS("websocket", "192.168.1.30:6001", "example.com", "../ssldata/server.cert")
+	r1 := robot.New("websocket", "192.168.1.4:6001")
 	startRobot(r1, "1", "123456")
-	r2 := robot.NewTLS("websocket", "192.168.1.30:6002", "example.com", "../ssldata/server.cert")
+	// r2 := robot.NewTLS("websocket", "192.168.1.30:6002", "example.com", "../ssldata/server.cert")
+	r2 := robot.New("websocket", "192.168.1.4:6001")
 	startRobot(r2, "2", "123456")
 
 	r2.Say(1, "2 say hello")
